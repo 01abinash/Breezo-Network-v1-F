@@ -1,0 +1,327 @@
+.page { padding-top: 60px; }
+
+/* Hero */
+.hero {
+  min-height: 90vh;
+  padding: 80px 5% 60px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 60px;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+.heroBg {
+  position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(ellipse 50% 60% at 80% 40%, rgba(56,189,248,0.07), transparent 70%);
+}
+
+.heroContent { position: relative; z-index: 2; }
+
+.heroTitle {
+  font-size: clamp(32px, 4vw, 58px);
+  font-weight: 800;
+  color: var(--t1);
+  line-height: 1.08;
+  letter-spacing: -2px;
+  margin-bottom: 20px;
+}
+
+.sky { color: var(--sky); }
+
+.heroDesc {
+  font-size: 15px;
+  color: var(--t2);
+  font-weight: 300;
+  line-height: 1.75;
+  max-width: 460px;
+  margin-bottom: 36px;
+}
+
+.heroStats {
+  display: flex;
+  gap: 32px;
+}
+
+.heroStat { display: flex; flex-direction: column; gap: 3px; }
+
+.heroStatNum {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--sky);
+  font-family: var(--mono);
+  letter-spacing: -1px;
+}
+
+.heroStatLabel {
+  font-size: 10px;
+  color: var(--t3);
+  font-family: var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.heroViz {
+  position: relative;
+  height: 480px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.networkCanvas {
+  width: 100%; flex: 1; display: block;
+}
+
+.vizLegend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--border);
+  font-size: 10px;
+  font-family: var(--mono);
+  color: var(--t3);
+}
+
+.vizDot {
+  width: 7px; height: 7px; border-radius: 50; border-radius: 50%;
+}
+
+/* Sections */
+.section { padding: 80px 5%; }
+.darkSection { background: var(--bg2); }
+
+/* Reveal */
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+.visible { opacity: 1; transform: none; }
+
+/* Specs table */
+.specsTable {
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.specsHeader {
+  display: grid;
+  grid-template-columns: 1.5fr 2fr 1.5fr 1fr;
+  gap: 0;
+  padding: 12px 20px;
+  background: var(--bg3);
+  border-bottom: 1px solid var(--border);
+  font-size: 9px;
+  font-weight: 700;
+  font-family: var(--mono);
+  color: var(--t3);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+.specsRow {
+  display: grid;
+  grid-template-columns: 1.5fr 2fr 1.5fr 1fr;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.15s;
+  align-items: center;
+}
+.specsRow:last-child { border-bottom: none; }
+.specsRow:hover { background: rgba(255,255,255,0.02); }
+
+.specParam { font-size: 13px; font-weight: 600; color: var(--t1); }
+.specMethod { font-size: 12px; color: var(--t2); font-weight: 300; }
+.specRange  { font-size: 11px; font-family: var(--mono); color: var(--t2); }
+.specAccuracy { font-size: 11px; font-family: var(--mono); color: var(--sky); font-weight: 600; }
+
+/* Reward tiers */
+.tiersGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.tierCard {
+  background: var(--bg3);
+  border: 1px solid;
+  border-radius: 16px;
+  padding: 24px 20px;
+  transition: transform 0.2s;
+}
+.tierCard:hover { transform: translateY(-3px); }
+
+.tierBadge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  font-family: var(--mono);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid;
+  margin-bottom: 16px;
+}
+
+.tierMult {
+  font-size: 40px;
+  font-weight: 800;
+  letter-spacing: -1.5px;
+  line-height: 1;
+  font-family: var(--mono);
+  margin-bottom: 2px;
+}
+
+.tierMultLabel {
+  font-size: 10px;
+  color: var(--t3);
+  font-family: var(--mono);
+  margin-bottom: 16px;
+}
+
+.tierDivider {
+  height: 1px;
+  background: var(--border);
+  margin-bottom: 14px;
+}
+
+.tierRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  margin-bottom: 7px;
+  align-items: center;
+}
+.tierKey { color: var(--t3); font-family: var(--mono); font-size: 10px; }
+.tierVal { color: var(--t1); font-weight: 600; font-family: var(--mono); font-size: 11px; }
+
+.formulaBox {
+  background: var(--bg4);
+  border: 1px solid rgba(56,189,248,0.2);
+  border-radius: 12px;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.formulaLabel {
+  font-size: 10px;
+  font-weight: 700;
+  font-family: var(--mono);
+  color: var(--t3);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+.formulaCode {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--sky);
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Roadmap */
+.roadmapGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  position: relative;
+}
+
+.roadmapCard {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px 20px;
+  position: relative;
+  transition: border-color 0.2s;
+}
+
+.roadmapActive {
+  border-color: rgba(56,189,248,0.35);
+  background: rgba(56,189,248,0.03);
+}
+
+.roadmapPhase {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.roadmapPhaseLabel {
+  font-size: 10px;
+  font-family: var(--mono);
+  font-weight: 700;
+  color: var(--sky);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.roadmapStatus {
+  font-size: 9px;
+  font-family: var(--mono);
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+.status_active   { background: rgba(56,189,248,0.12); color: var(--sky); }
+.status_upcoming { background: rgba(252,211,77,0.12); color: var(--amber); }
+.status_planned  { background: rgba(71,85,105,0.3);   color: var(--t3); }
+
+.roadmapTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--t1);
+  letter-spacing: -0.4px;
+  margin-bottom: 16px;
+}
+
+.roadmapItems { list-style: none; display: flex; flex-direction: column; gap: 9px; }
+
+.roadmapItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  font-size: 12px;
+  color: var(--t2);
+  font-weight: 300;
+  line-height: 1.45;
+}
+
+.roadmapDot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 5px;
+}
+
+@media (max-width: 1024px) {
+  .hero          { grid-template-columns: 1fr; }
+  .heroViz       { height: 320px; }
+  .tiersGrid     { grid-template-columns: repeat(2, 1fr); }
+  .roadmapGrid   { grid-template-columns: repeat(2, 1fr); }
+  .specsHeader, .specsRow { grid-template-columns: 1fr 1.5fr 1fr; }
+  .specsHeader span:nth-child(4), .specsRow :nth-child(4) { display: none; }
+}
+
+@media (max-width: 600px) {
+  .tiersGrid   { grid-template-columns: 1fr; }
+  .roadmapGrid { grid-template-columns: 1fr; }
+  .heroStats   { flex-wrap: wrap; gap: 20px; }
+}

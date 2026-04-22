@@ -1,0 +1,105 @@
+.panel {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 24px;
+}
+
+.loading {
+  height: 280px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: var(--t3);
+  font-family: var(--mono);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--t1);
+  letter-spacing: -0.3px;
+}
+
+.tabs {
+  display: flex;
+  gap: 4px;
+}
+
+.tab {
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: var(--mono);
+  background: transparent;
+  color: var(--t3);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.tab:hover { color: var(--t2); }
+.tabActive { /* applied inline with dynamic colors */ }
+
+/* Legend */
+.legend {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--t3);
+  font-family: var(--mono);
+}
+
+.legendDot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+}
+
+.legendDash {
+  width: 14px; height: 2px;
+  background: rgba(248,113,113,0.5);
+  border-top: 2px dashed rgba(248,113,113,0.5);
+}
+
+/* Tooltip */
+.tooltip {
+  background: var(--bg4);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-family: var(--mono);
+}
+
+.tooltipTime {
+  font-size: 10px;
+  color: var(--t3);
+  margin-bottom: 6px;
+  letter-spacing: 0.5px;
+}
+
+.tooltipRow {
+  display: flex;
+  gap: 8px;
+  font-size: 11px;
+  align-items: center;
+}
+
+.tooltipVal {
+  color: var(--t1);
+  font-weight: 500;
+}

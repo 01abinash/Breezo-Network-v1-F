@@ -1,0 +1,89 @@
+.section {
+  padding: 96px 5% 150px;
+  background: var(--bg);
+}
+
+.inner { width: 100%; }
+
+.header {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 80px;
+  align-items: end;
+  margin-bottom: 48px;
+}
+
+.header h2 { margin-bottom: 0; }
+
+.headerDesc {
+  font-size: 15px;
+  color: var(--t2);
+  font-weight: 300;
+  line-height: 1.75;
+}
+
+.southAsiaBox {
+  background: rgba(56,189,248,0.04);
+  border: 1px solid rgba(56,189,248,0.18);
+  border-radius: 20px;
+  padding: 40px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 48px;
+  align-items: center;
+}
+
+.saLeft h3 {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--t1);
+  margin-bottom: 14px;
+  letter-spacing: -0.5px;
+  line-height: 1.2;
+}
+
+.saLeft p {
+  font-size: 14px;
+  color: var(--t2);
+  line-height: 1.75;
+  font-weight: 300;
+}
+
+.miniGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.miniStat {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px;
+  text-align: center;
+  transition: border-color 0.2s;
+}
+.miniStat:hover { border-color: rgba(56,189,248,0.25); }
+
+.miniNum {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--sky);
+  display: block;
+  letter-spacing: -1px;
+  line-height: 1;
+  margin-bottom: 5px;
+  font-family: var(--mono);
+}
+
+.miniLabel {
+  font-size: 11px;
+  color: var(--t3);
+  font-family: var(--mono);
+  letter-spacing: 0.5px;
+}
+
+@media (max-width: 1024px) {
+  .header { grid-template-columns: 1fr; gap: 20px; }
+  .southAsiaBox { grid-template-columns: 1fr; }
+}

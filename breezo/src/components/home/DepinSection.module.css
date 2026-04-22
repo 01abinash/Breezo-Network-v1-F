@@ -1,0 +1,171 @@
+.section {
+  padding: 96px 5%;
+  background: var(--bg);
+}
+
+.sectionHeader {
+  text-align: center;
+  max-width: 620px;
+  margin: 0 auto 60px;
+}
+
+.layerGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.layerCard {
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 28px;
+  background: var(--bg3);
+  transition: all 0.25s;
+  position: relative;
+  overflow: hidden;
+}
+
+.layerCard::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse 70% 50% at 50% 100%, rgba(56,189,248,0.04), transparent 70%);
+  pointer-events: none;
+}
+
+.layerCard:hover {
+  border-color: rgba(56,189,248,0.25);
+  transform: translateY(-3px);
+}
+
+.layerStep {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--sky);
+  letter-spacing: 1.5px;
+  margin-bottom: 16px;
+  text-transform: uppercase;
+}
+
+.layerIcon {
+  font-size: 28px;
+  margin-bottom: 14px;
+  display: block;
+}
+
+.layerTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--t1);
+  margin-bottom: 10px;
+  letter-spacing: -0.3px;
+}
+
+.layerDesc {
+  font-size: 13px;
+  color: var(--t2);
+  line-height: 1.7;
+  font-weight: 300;
+  margin-bottom: 18px;
+}
+
+.layerTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* Bottom split */
+.bottomGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  align-items: start;
+  margin-top: 20px;
+}
+
+/* Token orbit */
+.orbitWrap {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  height: 320px;
+  display: flex;
+  flex-direction: column;
+}
+
+.orbitCanvas {
+  width: 100%;
+  flex: 1;
+  display: block;
+}
+
+.orbitCaption {
+  font-size: 11px;
+  font-family: var(--mono);
+  color: var(--t3);
+  text-align: center;
+  padding: 10px;
+  border-top: 1px solid var(--border);
+}
+
+/* Right panel */
+.rightPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.rewardFormula,
+.whyNow {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 22px;
+}
+
+.formulaLabel {
+  font-size: 10px;
+  font-weight: 700;
+  font-family: var(--mono);
+  color: var(--t3);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+
+.formulaCode {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--sky);
+  background: rgba(56,189,248,0.06);
+  border: 1px solid rgba(56,189,248,0.15);
+  border-radius: 8px;
+  padding: 14px 16px;
+  line-height: 1.6;
+}
+
+.whyRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--t2);
+  font-weight: 300;
+  margin-bottom: 10px;
+}
+.whyRow:last-child { margin-bottom: 0; }
+
+.greenDot {
+  width: 6px; height: 6px;
+  background: var(--green);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+@media (max-width: 1024px) {
+  .layerGrid { grid-template-columns: 1fr; }
+  .bottomGrid { grid-template-columns: 1fr; }
+}
