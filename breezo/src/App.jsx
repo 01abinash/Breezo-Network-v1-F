@@ -4,6 +4,7 @@ import HomePage from './pages/HomePage'
 import DashboardPage from './pages/DashboardPage'
 import NetworkPage from './pages/NetworkPage'
 import AboutPage from './pages/AboutPage'
+import TokenizationPage from './pages/TokenizationPage'
 
 export default function App() {
   return (
@@ -11,6 +12,7 @@ export default function App() {
       <Routes>
         <Route path="/"          element={<HomePage />} />
         <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/tokenization" element={<TokenizationPage />} />
         <Route path="/network"   element={<NetworkPage />} />
         <Route path="/about"     element={<AboutPage />} />
       </Routes>

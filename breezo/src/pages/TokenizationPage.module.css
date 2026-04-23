@@ -1,0 +1,483 @@
+.page {
+  padding: 88px 5% 64px;
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.authShell,
+.hero,
+.metricsGrid,
+.mainGrid,
+.historySection {
+  position: relative;
+}
+
+.authShell {
+  min-height: calc(100vh - 152px);
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(320px, 480px);
+  gap: 20px;
+  align-items: stretch;
+}
+
+.authIntro,
+.authCard,
+.identityCard,
+.panel,
+.historySection {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+}
+
+.authIntro {
+  padding: 36px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at top left, rgba(56, 189, 248, 0.14), transparent 28%),
+    radial-gradient(circle at bottom right, rgba(167, 139, 250, 0.12), transparent 28%),
+    var(--bg2);
+}
+
+.authCard {
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  justify-content: center;
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) 360px;
+  gap: 20px;
+  align-items: stretch;
+}
+
+.heroCopy,
+.identityCard,
+.panel,
+.historySection {
+  padding: 26px;
+}
+
+.heroCopy {
+  background:
+    radial-gradient(circle at top right, rgba(56, 189, 248, 0.12), transparent 28%),
+    linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)),
+    var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.heroGlow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.kicker,
+.formLabel,
+.metricLabel,
+.identityKey,
+.panelHint,
+.historyHead,
+.fieldLabel {
+  font-size: 10px;
+  font-weight: 700;
+  font-family: var(--mono);
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+  color: var(--t3);
+}
+
+.title {
+  font-size: clamp(30px, 4vw, 52px);
+  font-weight: 800;
+  line-height: 1.02;
+  letter-spacing: -2px;
+  color: var(--t1);
+  margin-top: 10px;
+  max-width: 760px;
+}
+
+.subtitle {
+  margin-top: 16px;
+  max-width: 700px;
+  color: var(--t2);
+  font-size: 15px;
+  line-height: 1.75;
+}
+
+.introGrid {
+  margin-top: 26px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.introCard,
+.routeCard,
+.metricTile {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 18px;
+}
+
+.introTitle,
+.formTitle,
+.identityTitle,
+.panelTitle {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--t1);
+  letter-spacing: -0.7px;
+  line-height: 1.2;
+}
+
+.introText,
+.routeText,
+.metricNote {
+  margin-top: 8px;
+  color: var(--t2);
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.formHeader,
+.identityHeader,
+.panelHeader,
+.sectionHeader,
+.routeTop,
+.scoreTop,
+.demoRow,
+.identityRow,
+.historyRow,
+.historyHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.previewBadge,
+.tierBadge,
+.metaPill,
+.linkBtn {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 14px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: var(--mono);
+}
+
+.previewBadge,
+.tierBadge {
+  border: 1px solid rgba(167, 139, 250, 0.24);
+  background: rgba(167, 139, 250, 0.12);
+  color: var(--purple);
+}
+
+.formTitle,
+.identityTitle {
+  margin-top: 8px;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.input {
+  min-height: 46px;
+  width: 100%;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: 14px;
+  color: var(--t1);
+  padding: 0 14px;
+  font-size: 14px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.input::placeholder {
+  color: var(--t3);
+}
+
+.input:focus-visible,
+.primaryBtn:focus-visible,
+.secondaryBtn:focus-visible,
+.linkBtn:focus-visible {
+  outline: 2px solid var(--sky);
+  outline-offset: 3px;
+}
+
+.input:focus-visible {
+  border-color: rgba(56, 189, 248, 0.35);
+  box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.08);
+}
+
+.errorBox {
+  border-radius: 14px;
+  border: 1px solid rgba(248, 113, 113, 0.28);
+  background: rgba(248, 113, 113, 0.08);
+  color: var(--red);
+  padding: 12px 14px;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.primaryBtn,
+.secondaryBtn,
+.linkBtn {
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.primaryBtn {
+  min-height: 46px;
+  background: var(--sky);
+  color: #07080A;
+  border-radius: 14px;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.secondaryBtn,
+.linkBtn {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: var(--border);
+  color: var(--t2);
+}
+
+.primaryBtn:hover,
+.secondaryBtn:hover,
+.linkBtn:hover {
+  transform: translateY(-1px);
+}
+
+.primaryBtn:hover {
+  background: #7dd3fc;
+}
+
+.secondaryBtn:hover,
+.linkBtn:hover {
+  border-color: var(--border2);
+  color: var(--t1);
+}
+
+.demoBlock {
+  border-top: 1px solid var(--border);
+  padding-top: 18px;
+}
+
+.demoLabel {
+  font-size: 11px;
+  font-weight: 700;
+  font-family: var(--mono);
+  color: var(--t3);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.demoList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.demoRow {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border);
+  color: var(--t2);
+  font-size: 12px;
+  font-family: var(--mono);
+}
+
+.heroMeta {
+  margin-top: 22px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.metaPill {
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.03);
+  color: var(--t2);
+}
+
+.identityGrid,
+.scoreList,
+.routeList {
+  margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.identityRow {
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.identityVal,
+.routeValue,
+.scoreValue {
+  color: var(--t1);
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.metricsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.metricValue {
+  margin-top: 10px;
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -1px;
+}
+
+.mainGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.bottomGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.scoreTrack {
+  height: 10px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.05);
+  margin-top: 8px;
+}
+
+.scoreFill {
+  height: 100%;
+  border-radius: inherit;
+}
+
+.historySection {
+  padding-bottom: 16px;
+}
+
+.historyTable {
+  margin-top: 18px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.historyHead {
+  padding: 14px 18px;
+  background: var(--bg3);
+  border-bottom: 1px solid var(--border);
+}
+
+.historyHead span,
+.historyRow span {
+  flex: 1;
+}
+
+.historyRow {
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--border);
+  color: var(--t2);
+  font-size: 13px;
+}
+
+.historyRow:last-child {
+  border-bottom: none;
+}
+
+@media (max-width: 1100px) {
+  .authShell,
+  .hero,
+  .metricsGrid,
+  .mainGrid,
+  .bottomGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .page {
+    padding-inline: 4%;
+  }
+
+  .authIntro,
+  .authCard,
+  .heroCopy,
+  .identityCard,
+  .panel,
+  .historySection {
+    padding: 20px;
+    border-radius: 20px;
+  }
+
+  .introGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .formHeader,
+  .identityHeader,
+  .panelHeader,
+  .sectionHeader,
+  .historyHead,
+  .historyRow,
+  .demoRow {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .historyHead span,
+  .historyRow span {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .input,
+  .primaryBtn,
+  .secondaryBtn,
+  .linkBtn {
+    transition: none;
+  }
+}

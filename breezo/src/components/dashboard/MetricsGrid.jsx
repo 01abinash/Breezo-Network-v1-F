@@ -1,33 +1,23 @@
-import { WHO_LIMITS } from '../../lib/aqi'
 import styles from './MetricsGrid.module.css'
 
 const METRICS = [
-  { key: 'pm25',  label: 'PM2.5', unit: 'μg/m³', whoKey: 'pm25', color: '#38BDF8', max: 150 },
-  { key: 'pm10',  label: 'PM10',  unit: 'μg/m³', whoKey: 'pm10', color: '#2DD4BF', max: 250 },
-  { key: 'no2',   label: 'NO₂',   unit: 'μg/m³', whoKey: 'no2',  color: '#FCD34D', max: 200 },
-  { key: 'o3',    label: 'O₃',    unit: 'μg/m³', whoKey: 'o3',   color: '#A78BFA', max: 180 },
-  { key: 'co',    label: 'CO',    unit: 'μg/m³', whoKey: 'co',   color: '#FB923C', max: 10000 },
-  { key: 'so2',   label: 'SO₂',   unit: 'μg/m³', whoKey: 'so2',  color: '#F87171', max: 350 },
+  { key: 'pm25', label: 'PM2.5', unit: 'ug/m3', color: '#38BDF8', max: 150, note: 'Primary AQI input from your particulate sensor.' },
+  { key: 'temperature', label: 'Temperature', unit: 'C', color: '#FB923C', max: 50, note: 'Ambient temperature from DHT22.' },
+  { key: 'humidity', label: 'Humidity', unit: '% RH', color: '#2DD4BF', max: 100, note: 'Relative humidity from DHT22.' },
+  { key: 'pressure', label: 'Pressure', unit: 'hPa', color: '#A78BFA', max: 1200, note: 'Atmospheric pressure from BMP180.' },
+  { key: 'mq135', label: 'MQ135', unit: 'raw/ppm', color: '#FCD34D', max: 1000, note: 'Gas sensor signal for your backend calibration logic.' },
 ]
 
 function MetricCard({ metric, value }) {
   const pct = value != null ? Math.min(100, (value / metric.max) * 100) : 0
-  const whoLimit = WHO_LIMITS[metric.whoKey]
-  const whoMultiple = value != null && whoLimit ? (value / whoLimit).toFixed(1) : null
-  const isOverWHO = whoMultiple && parseFloat(whoMultiple) > 1
 
   return (
     <div className={styles.card}>
       <div className={styles.topRow}>
         <span className={styles.label}>{metric.label}</span>
-        {isOverWHO && (
-          <span className={styles.whoBadge} style={{ color: '#F87171', background: 'rgba(248,113,113,0.12)', borderColor: 'rgba(248,113,113,0.2)' }}>
-            {whoMultiple}× WHO
-          </span>
-        )}
       </div>
       <div className={styles.value}>
-        {value != null ? parseFloat(value).toFixed(1) : '—'}
+        {value != null ? parseFloat(value).toFixed(1) : 'Awaiting'}
       </div>
       <div className={styles.unit}>{metric.unit}</div>
       <div className={styles.barWrap}>
@@ -36,11 +26,26 @@ function MetricCard({ metric, value }) {
           style={{ width: `${pct}%`, background: metric.color, transition: 'width 0.8s ease' }}
         />
       </div>
-      {whoLimit && (
-        <div className={styles.whoLine}>
-          WHO limit: <span>{whoLimit} {metric.unit}</span>
-        </div>
-      )}
+      <div className={styles.infoLine}>{metric.note}</div>
+    </div>
+  )
+}
+
+function formatGps(gps) {
+  if (!gps?.lat || !gps?.lon) return null
+  return `${gps.lat.toFixed(4)}, ${gps.lon.toFixed(4)}`
+}
+
+function InfoCard({ label, value, note }) {
+  return (
+    <div className={styles.card}>
+      <div className={styles.topRow}>
+        <span className={styles.label}>{label}</span>
+      </div>
+      <div className={`${styles.value} ${styles.valueCompact}`}>
+        {value ?? 'Awaiting backend'}
+      </div>
+      <div className={styles.infoLine}>{note}</div>
     </div>
   )
 }
@@ -48,11 +53,21 @@ function MetricCard({ metric, value }) {
 export default function MetricsGrid({ data }) {
   return (
     <div className={styles.panel}>
-      <div className={styles.panelHeader}>Pollutant Concentrations</div>
+      <div className={styles.panelHeader}>Device Telemetry</div>
       <div className={styles.grid}>
-        {METRICS.map(m => (
-          <MetricCard key={m.key} metric={m} value={data?.[m.key]} />
+        {METRICS.map((metric) => (
+          <MetricCard key={metric.key} metric={metric} value={data?.[metric.key]} />
         ))}
+        <InfoCard
+          label="Device ID"
+          value={data?.deviceId}
+          note="Use this as the secure link between your device registry, backend, and token rewards."
+        />
+        <InfoCard
+          label="GPS"
+          value={formatGps(data?.gps)}
+          note={data?.gps?.source === 'City profile' ? 'Using fallback city coordinates until live GPS is connected.' : 'Live coordinates from the GPS module.'}
+        />
       </div>
     </div>
   )

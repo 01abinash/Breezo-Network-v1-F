@@ -2,14 +2,13 @@ import { useState } from 'react'
 import { useAirQuality } from '../hooks/useAirQuality'
 import { CITIES } from '../lib/aqi'
 import { LivePill } from '../components/ui/UI'
-import CitySelector       from '../components/dashboard/CitySelector'
-import AQIHeroCard        from '../components/dashboard/AQIHeroCard'
-import MetricsGrid        from '../components/dashboard/MetricsGrid'
-import TrendChart         from '../components/dashboard/TrendChart'
-import WHOBars            from '../components/dashboard/WHOBars'
-import ForecastRow        from '../components/dashboard/ForecastRow'
-import HealthCards        from '../components/dashboard/HealthCards'
-import CityCompareChart   from '../components/dashboard/CityCompareChart'
+import CitySelector from '../components/dashboard/CitySelector'
+import AQIHeroCard from '../components/dashboard/AQIHeroCard'
+import MetricsGrid from '../components/dashboard/MetricsGrid'
+import TrendChart from '../components/dashboard/TrendChart'
+import WHOBars from '../components/dashboard/WHOBars'
+import HealthCards from '../components/dashboard/HealthCards'
+import CityCompareChart from '../components/dashboard/CityCompareChart'
 import styles from './DashboardPage.module.css'
 
 export default function DashboardPage() {
@@ -22,8 +21,6 @@ export default function DashboardPage() {
 
   return (
     <div className={styles.page}>
-
-      {/* Page header */}
       <div className={styles.pageHeader}>
         <div className={styles.headerLeft}>
           <h1 className={styles.pageTitle}>Air Quality Dashboard</h1>
@@ -32,6 +29,7 @@ export default function DashboardPage() {
             <span className={styles.metaText}>
               {dateStr} · {timeStr} · BREEZO Network v1.0
             </span>
+            {data?.sourceLabel && <span className={styles.metaText}>{data.sourceLabel}</span>}
             {error && (
               <span className={styles.errorBadge}>
                 API error — showing cached data
@@ -47,10 +45,8 @@ export default function DashboardPage() {
         </button>
       </div>
 
-      {/* City selector */}
       <CitySelector activeCity={activeCity} onChange={setActiveCity} />
 
-      {/* Main 2-col grid: AQI hero + metrics */}
       <div className={styles.mainGrid}>
         <AQIHeroCard
           cityName={CITIES[activeCity].name}
@@ -60,32 +56,21 @@ export default function DashboardPage() {
         <MetricsGrid data={data} />
       </div>
 
-      {/* WHO compliance */}
       <WHOBars data={data} />
-
-      {/* Trend chart */}
       <TrendChart trend={data?.trend} />
-
-      {/* 7-day forecast */}
-      <ForecastRow forecast={data?.forecast} />
-
-      {/* Health recommendations */}
       <HealthCards data={data} />
-
-      {/* City comparison */}
       <CityCompareChart />
 
-      {/* Quick reference */}
       <div className={styles.quickRef}>
         <div className={styles.qrHeader}>AQI Quick Reference</div>
         <div className={styles.qrGrid}>
           {[
-            { range: '0 – 50',   label: 'Good',                      color: '#4ADE80' },
-            { range: '51 – 100', label: 'Moderate',                  color: '#FCD34D' },
-            { range: '101 – 150',label: 'Unhealthy for Sensitive',   color: '#FB923C' },
-            { range: '151 – 200',label: 'Unhealthy',                 color: '#F87171' },
-            { range: '201 – 300',label: 'Very Unhealthy',            color: '#E879F9' },
-            { range: '301+',     label: 'Hazardous',                 color: '#F87171' },
+            { range: '0 - 50', label: 'Good', color: '#4ADE80' },
+            { range: '51 - 100', label: 'Moderate', color: '#FCD34D' },
+            { range: '101 - 150', label: 'Unhealthy for Sensitive', color: '#FB923C' },
+            { range: '151 - 200', label: 'Unhealthy', color: '#F87171' },
+            { range: '201 - 300', label: 'Very Unhealthy', color: '#E879F9' },
+            { range: '301+', label: 'Hazardous', color: '#F87171' },
           ].map((item) => (
             <div className={styles.qrItem} key={item.range}>
               <span className={styles.qrDot} style={{ background: item.color }} />
@@ -97,7 +82,6 @@ export default function DashboardPage() {
           ))}
         </div>
       </div>
-
     </div>
   )
 }
