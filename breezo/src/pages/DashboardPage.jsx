@@ -8,6 +8,7 @@ import AQIHeroCard from '../components/dashboard/AQIHeroCard'
 import MetricsGrid from '../components/dashboard/MetricsGrid'
 import TrendChart from '../components/dashboard/TrendChart'
 import WHOBars from '../components/dashboard/WHOBars'
+import LiveMap from '../components/dashboard/LiveMap'
 import HealthCards from '../components/dashboard/HealthCards'
 import CityCompareChart from '../components/dashboard/CityCompareChart'
 import styles from './DashboardPage.module.css'
@@ -52,6 +53,7 @@ export default function DashboardPage() {
 
       <WHOBars data={data} />
       <TrendChart trend={data?.trend} />
+      <LiveMap activeCity={activeCity} />
       <HealthCards data={data} />
       <CityCompareChart />
 
