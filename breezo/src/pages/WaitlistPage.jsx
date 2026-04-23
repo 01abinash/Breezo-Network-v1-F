@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react'
-import { addWaitlistEntry, getWaitlistCount } from '../lib/waitlist'
+import { useEffect, useMemo, useState } from 'react'
+import { addWaitlistEntry, getWaitlistCount, isSupabaseConfigured } from '../lib/waitlist'
 import styles from './WaitlistPage.module.css'
 
 const INITIAL_FORM = {
@@ -12,9 +12,34 @@ const INITIAL_FORM = {
 }
 
 export default function WaitlistPage() {
-  const [count, setCount] = useState(() => getWaitlistCount())
+  const usingSupabase = isSupabaseConfigured()
+  const [count, setCount] = useState(0)
   const [form, setForm] = useState(INITIAL_FORM)
   const [submitted, setSubmitted] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    let active = true
+
+    async function loadCount() {
+      try {
+        const nextCount = await getWaitlistCount()
+        if (active) {
+          setCount(nextCount)
+        }
+      } catch (loadError) {
+        if (active) {
+          setError(loadError.message || 'Unable to load waitlist count right now.')
+        }
+      }
+    }
+
+    loadCount()
+    return () => {
+      active = false
+    }
+  }, [])
 
   const waitingLabel = useMemo(() => count.toLocaleString(), [count])
 
@@ -23,12 +48,23 @@ export default function WaitlistPage() {
     setForm((current) => ({ ...current, [name]: value }))
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault()
-    addWaitlistEntry(form)
-    setCount(getWaitlistCount())
-    setSubmitted(true)
-    setForm(INITIAL_FORM)
+    setSubmitting(true)
+    setError('')
+    setSubmitted(false)
+
+    try {
+      await addWaitlistEntry(form)
+      const nextCount = await getWaitlistCount()
+      setCount(nextCount)
+      setSubmitted(true)
+      setForm(INITIAL_FORM)
+    } catch (submitError) {
+      setError(submitError.message || 'Unable to submit the waitlist form right now.')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -54,9 +90,21 @@ export default function WaitlistPage() {
             </p>
           </div>
 
+          {!usingSupabase && (
+            <div className={styles.info}>
+              Supabase is not configured yet. This form is currently saving to local browser storage only.
+            </div>
+          )}
+
           {submitted && (
             <div className={styles.success}>
               Your waitlist request was added. We will reach out when onboarding opens.
+            </div>
+          )}
+
+          {error && (
+            <div className={styles.error}>
+              {error}
             </div>
           )}
 
@@ -97,8 +145,8 @@ export default function WaitlistPage() {
               />
             </label>
 
-            <button className={styles.submit} type="submit">
-              Join Waitlist
+            <button className={styles.submit} type="submit" disabled={submitting}>
+              {submitting ? 'Submitting...' : 'Join Waitlist'}
             </button>
           </form>
         </div>

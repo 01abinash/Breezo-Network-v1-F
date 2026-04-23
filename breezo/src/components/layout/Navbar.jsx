@@ -67,13 +67,16 @@ export default function Navbar() {
       <ul className={`${styles.links} ${menuOpen ? styles.open : ''}`}>
         <li><Link to="/"          className={isActive('/')          ? styles.active : ''}>Home</Link></li>
         <li><Link to="/dashboard" className={isActive('/dashboard') ? styles.active : ''}>Dashboard</Link></li>
-        <li><Link to="/tokenization" className={isActive('/tokenization') ? styles.active : ''}>Tokenization</Link></li>
+        {/* <li><Link to="/tokenization" className={isActive('/tokenization') ? styles.active : ''}>Tokenization</Link></li> */}
         <li><Link to="/network"   className={isActive('/network')   ? styles.active : ''}>Network</Link></li>
         <li><Link to="/about"     className={isActive('/about')     ? styles.active : ''}>About</Link></li>
       </ul>
 
       <div className={styles.right}>
-        {session ? (
+        <button className={styles.waitlistBtn} onClick={() => navigate('/waitlist')}>
+          Join Waitlist
+        </button>
+        {/* {session ? (
           <div className={styles.profileWrap} ref={profileRef}>
             <button
               className={styles.profileBtn}
@@ -105,7 +108,7 @@ export default function Navbar() {
           <button className={styles.ctaBtn} onClick={() => navigate('/tokenization')}>
             Login
           </button>
-        )}
+        )} */}
         <button
           className={`${styles.hamburger} ${menuOpen ? styles.hamburgerOpen : ''}`}
           onClick={() => setMenuOpen(v => !v)}
