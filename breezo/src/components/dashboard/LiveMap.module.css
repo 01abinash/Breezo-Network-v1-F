@@ -1,0 +1,186 @@
+.panel {
+  background: linear-gradient(180deg, rgba(20, 23, 32, 0.96), rgba(10, 12, 16, 0.98));
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  padding: 18px;
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.kicker {
+  color: var(--t3);
+  font: 700 10px/1.2 var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  margin-bottom: 8px;
+}
+
+.title {
+  margin: 0;
+  color: var(--t1);
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.legendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--t2);
+  font: 600 11px/1 var(--mono);
+  text-transform: uppercase;
+}
+
+.legendItem i {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  display: inline-block;
+}
+
+.mapShell {
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+}
+
+.mapFrame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 7;
+  min-height: 300px;
+  background: #0b1017;
+}
+
+.tileLayer,
+.overlay {
+  position: absolute;
+  inset: 0;
+}
+
+.tile {
+  position: absolute;
+  width: 256px;
+  height: 256px;
+  object-fit: cover;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.overlay {
+  background:
+    linear-gradient(180deg, rgba(7, 8, 10, 0.08), rgba(7, 8, 10, 0.24)),
+    linear-gradient(90deg, rgba(56, 189, 248, 0.04), transparent 30%, transparent 70%, rgba(167, 139, 250, 0.04));
+}
+
+.marker {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.markerPulse,
+.markerDot {
+  position: absolute;
+  border-radius: 999px;
+}
+
+.markerPulse {
+  width: 26px;
+  height: 26px;
+  animation: pulse 2.2s ease-in-out infinite;
+}
+
+.markerDot {
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(7, 8, 10, 0.96);
+  transition: transform 0.2s ease;
+}
+
+.markerActive .markerDot,
+.marker:hover .markerDot {
+  transform: scale(1.18);
+}
+
+.popup {
+  position: absolute;
+  min-width: 160px;
+  max-width: 180px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(15, 17, 21, 0.94);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.36);
+  pointer-events: none;
+}
+
+.popupCity {
+  color: var(--t1);
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.popupAqi {
+  color: var(--sky);
+  font: 700 12px/1.2 var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.popupStatus {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.45;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.95;
+    transform: scale(1.25);
+  }
+}
+
+@media (max-width: 768px) {
+  .panel {
+    padding: 14px;
+  }
+
+  .header {
+    flex-direction: column;
+  }
+
+  .legend {
+    justify-content: flex-start;
+  }
+
+  .mapFrame {
+    aspect-ratio: 1.15 / 1;
+    min-height: 280px;
+  }
+}
