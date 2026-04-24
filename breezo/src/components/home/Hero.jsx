@@ -39,11 +39,11 @@ function NetworkCanvas() {
     let raf
 
     const nodes = [
-      { label: 'KTM', r: 80, angle: 0.3, speed: 0.0008 },
-      { label: 'PKR', r: 80, angle: 1.8, speed: 0.0008 },
-      { label: 'DEL', r: 120, angle: 0.9, speed: 0.0005 },
-      { label: 'S7', r: 60, angle: 4.2, speed: 0.0012 },
-      { label: 'S12', r: 100, angle: 3.5, speed: 0.0007 },
+      { label: 'PM2.5', r: 80, angle: 0.3, speed: 0.0008 },
+      { label: 'DHT22', r: 80, angle: 1.8, speed: 0.0008 },
+      { label: 'MQ1.3', r: 120, angle: 0.9, speed: 0.0005 },
+      { label: 'BMP', r: 60, angle: 4.2, speed: 0.0012 },
+      { label: 'GPS', r: 100, angle: 3.5, speed: 0.0007 },
       { label: 'API', r: 90, angle: 5.8, speed: 0.0009 },
     ]
 
@@ -101,7 +101,7 @@ function NetworkCanvas() {
       ctx.stroke()
       ctx.fillStyle = 'rgba(56,189,248,0.9)'
       ctx.font = 'bold 7px DM Mono, monospace'
-      ctx.fillText('CORE', cx, cy)
+      ctx.fillText('BREEZO', cx, cy)
 
       tick += 1
       raf = requestAnimationFrame(draw)
@@ -158,8 +158,8 @@ export default function Hero() {
             </svg>
             Live Dashboard
           </button>
-          <button className={styles.btnGhost} onClick={() => navigate('/network')}>
-            Explore Network {'->'}
+          <button className={styles.btnGhost} onClick={() => navigate('/waitlist')}>
+            Join Waitlist {'->'}
           </button>
         </div>
       </div>

@@ -10,7 +10,7 @@ export default function HomePage() {
     <>
       <Hero />
       <StatsBelt />
-      <CrisisSection />
+      {/* <CrisisSection /> */}
       <HowItWorks />
       <DepinSection />
       <VisionSection />
