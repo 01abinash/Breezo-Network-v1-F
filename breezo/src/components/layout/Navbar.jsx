@@ -54,7 +54,7 @@ export default function Navbar() {
   function handleLogout() {
     clearTokenSession()
     setProfileOpen(false)
-    navigate('/tokenization')
+    navigate('/login')
   }
 
   return (
@@ -67,16 +67,12 @@ export default function Navbar() {
       <ul className={`${styles.links} ${menuOpen ? styles.open : ''}`}>
         <li><Link to="/"          className={isActive('/')          ? styles.active : ''}>Home</Link></li>
         <li><Link to="/dashboard" className={isActive('/dashboard') ? styles.active : ''}>Dashboard</Link></li>
-        {/* <li><Link to="/tokenization" className={isActive('/tokenization') ? styles.active : ''}>Tokenization</Link></li> */}
         <li><Link to="/network"   className={isActive('/network')   ? styles.active : ''}>Network</Link></li>
         <li><Link to="/about"     className={isActive('/about')     ? styles.active : ''}>About</Link></li>
       </ul>
 
       <div className={styles.right}>
-        <button className={styles.waitlistBtn} onClick={() => navigate('/waitlist')}>
-          Join Waitlist
-        </button>
-        {/* {session ? (
+        {session ? (
           <div className={styles.profileWrap} ref={profileRef}>
             <button
               className={styles.profileBtn}
@@ -93,7 +89,7 @@ export default function Navbar() {
               <div className={styles.dropdown} role="menu">
                 <div className={styles.dropdownMeta}>
                   <span className={styles.dropdownName}>{session.ownerName}</span>
-                  <span className={styles.dropdownSub}>{session.deviceId}</span>
+                  <span className={styles.dropdownSub}>{session.ownerEmail}</span>
                 </div>
                 <button className={styles.dropdownItem} onClick={() => navigate('/tokenization')} type="button" role="menuitem">
                   Open dashboard
@@ -105,10 +101,10 @@ export default function Navbar() {
             )}
           </div>
         ) : (
-          <button className={styles.ctaBtn} onClick={() => navigate('/tokenization')}>
+          <button className={styles.ctaBtn} onClick={() => navigate('/login')}>
             Login
           </button>
-        )} */}
+        )}
         <button
           className={`${styles.hamburger} ${menuOpen ? styles.hamburgerOpen : ''}`}
           onClick={() => setMenuOpen(v => !v)}

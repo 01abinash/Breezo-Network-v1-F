@@ -14,8 +14,8 @@ export default function Footer() {
         <div className={styles.col}>
           <h4>Network</h4>
           <ul>
-            <li><Link to="/waitlist">Join Waitlist</Link></li>
             <li><Link to="/dashboard">Live Dashboard</Link></li>
+            <li><Link to="/tokenization">Operator Login</Link></li>
             <li><a href="#">Data API</a></li>
             <li><a href="#">Node Registry</a></li>
           </ul>

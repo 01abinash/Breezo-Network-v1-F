@@ -158,8 +158,8 @@ export default function Hero() {
             </svg>
             Live Dashboard
           </button>
-          <button className={styles.btnGhost} onClick={() => navigate('/waitlist')}>
-            Join Waitlist {'->'}
+          <button className={styles.btnGhost} onClick={() => navigate('/tokenization')}>
+            Operator Login {'->'}
           </button>
         </div>
       </div>

@@ -72,15 +72,15 @@ export function HomeCTA() {
             BREEZO launches?
           </h2>
           <p className={styles.ctaDesc}>
-            Join the early BREEZO operator community and get notified when the next device onboarding
-            phase opens across our active air-quality cities.
+            Access the private operator area to review device-linked reward flow, settlement history,
+            and tokenization metrics.
           </p>
           <div className={styles.ctaBtns}>
             <button className={styles.btnSky} onClick={() => navigate('/dashboard')}>
               View Live Data
             </button>
-            <button className={styles.btnGhost} onClick={() => navigate('/waitlist')}>
-              Join Waitlist {'->'}
+            <button className={styles.btnGhost} onClick={() => navigate('/tokenization')}>
+              Operator Login {'->'}
             </button>
           </div>
           <div className={styles.solanaRow}><SolanaTag /></div>

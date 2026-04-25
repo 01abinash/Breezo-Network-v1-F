@@ -5,7 +5,6 @@ export function buildTokenSession(account) {
   return {
     ownerName: account.owner.name,
     ownerEmail: account.owner.email,
-    deviceId: account.device.deviceId,
   }
 }
 

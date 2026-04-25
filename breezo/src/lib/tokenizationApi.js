@@ -1,230 +1,142 @@
-import { getActiveDeviceCityKeys as getDeviceCityKeys } from './deviceDemo'
-
 export const TOKENIZATION_DEMO_STORAGE_KEY = 'breezo-tokenization-demo-data'
 
-const DEFAULT_OPERATOR_ACCOUNTS = [
-  {
-    credentials: {
-      email: 'aarav@breezo.network',
-      deviceId: 'KTM-01-8842',
-    },
-    dashboard: {
-      owner: {
-        name: 'Aarav Sharma',
-        email: 'aarav@breezo.network',
-        role: 'Operator',
+const DEFAULT_ACCOUNT = {
+  fullName: 'Aether Node Owner',
+  email: 'owner@breezo.io',
+  password: 'SecurePass123!',
+  dashboard: {
+    success: true,
+    data: [
+      {
+        nodeId: 'NODE_001',
+        temperature: 28.5,
+        humidity: 62.3,
+        pm25: 42.0,
+        bmp: 1008.6,
+        aqi: 112,
+        aqiLevel: 'MODERATE',
+        reward: 3.14,
+        syncing: false,
+        location: { lat: 28.6139, lng: 77.2090 },
+        lastSeen: '2026-04-25T10:30:00.000Z',
       },
-      device: {
-        deviceId: 'KTM-01-8842',
-        cityKey: 'ktm',
-        cityLabel: 'Kathmandu',
-        wallet: '9n4r...kQ2p',
-        tier: 'Gold',
-        status: 'Active',
-      },
-      metrics: {
-        uptime: 98.4,
-        quality: 94,
-        coverage: 88,
-        verification: 91,
-        epochScore: 93.2,
-        pendingRewards: 284.6,
-        claimableRewards: 180.4,
-        lifetimeRewards: 4210.3,
-        treasuryImpactUsd: 132.4,
-        epochStatus: 'Ready for settlement',
-        climatePoolShare: 15,
-        reputation: 87,
-      },
-      epochs: [
-        { epoch: 'Epoch 142', score: 95, rewards: 46.2, status: 'Settled' },
-        { epoch: 'Epoch 141', score: 93, rewards: 44.7, status: 'Settled' },
-        { epoch: 'Epoch 140', score: 89, rewards: 39.1, status: 'Settled' },
-      ],
-      transactions: [
-        { signature: '5Nf...abc', type: 'Settlement', amount: 46.2, status: 'Confirmed' },
-        { signature: '7Qa...x91', type: 'Claim', amount: 32.5, status: 'Confirmed' },
-        { signature: '3Pd...n77', type: 'Treasury route', amount: 8.4, status: 'Confirmed' },
-      ],
-      staking: {
-        stakedAmount: 500,
-        lockStatus: 'Active',
-        slashRisk: 'Low',
-      },
-    },
+    ],
   },
-  {
-    credentials: {
-      email: 'sanjana@breezo.network',
-      deviceId: 'PKR-01-1048',
-    },
-    dashboard: {
-      owner: {
-        name: 'Sanjana Thapa',
-        email: 'sanjana@breezo.network',
-        role: 'Operator',
-      },
-      device: {
-        deviceId: 'PKR-01-1048',
-        cityKey: 'pkr',
-        cityLabel: 'Pokhara',
-        wallet: 'C8tQ...2Pwa',
-        tier: 'Silver',
-        status: 'Calibrating',
-      },
-      metrics: {
-        uptime: 92.1,
-        quality: 90,
-        coverage: 74,
-        verification: 88,
-        epochScore: 86.7,
-        pendingRewards: 163.8,
-        claimableRewards: 92.6,
-        lifetimeRewards: 1984.5,
-        treasuryImpactUsd: 84.1,
-        epochStatus: 'Awaiting verifier approval',
-        climatePoolShare: 15,
-        reputation: 76,
-      },
-      epochs: [
-        { epoch: 'Epoch 142', score: 88, rewards: 28.4, status: 'Pending' },
-        { epoch: 'Epoch 141', score: 87, rewards: 27.8, status: 'Settled' },
-        { epoch: 'Epoch 140', score: 84, rewards: 24.3, status: 'Settled' },
-      ],
-      transactions: [
-        { signature: '9Tk...m20', type: 'Settlement', amount: 27.8, status: 'Confirmed' },
-        { signature: '2Xv...q14', type: 'Stake top-up', amount: 20.0, status: 'Confirmed' },
-      ],
-      staking: {
-        stakedAmount: 240,
-        lockStatus: 'Warmup',
-        slashRisk: 'Medium',
-      },
-    },
-  },
-  {
-    credentials: {
-      email: 'riya@breezo.network',
-      deviceId: 'DEL-01-7715',
-    },
-    dashboard: {
-      owner: {
-        name: 'Riya Verma',
-        email: 'riya@breezo.network',
-        role: 'Operator',
-      },
-      device: {
-        deviceId: 'DEL-01-7715',
-        cityKey: 'del',
-        cityLabel: 'Delhi',
-        wallet: 'Fk2P...1Jqz',
-        tier: 'Platinum',
-        status: 'Active',
-      },
-      metrics: {
-        uptime: 99.2,
-        quality: 97,
-        coverage: 96,
-        verification: 95,
-        epochScore: 97.1,
-        pendingRewards: 402.7,
-        claimableRewards: 254.1,
-        lifetimeRewards: 6108.9,
-        treasuryImpactUsd: 215.6,
-        epochStatus: 'Ready for settlement',
-        climatePoolShare: 15,
-        reputation: 94,
-      },
-      epochs: [
-        { epoch: 'Epoch 142', score: 98, rewards: 58.6, status: 'Settled' },
-        { epoch: 'Epoch 141', score: 97, rewards: 57.1, status: 'Settled' },
-        { epoch: 'Epoch 140', score: 95, rewards: 54.9, status: 'Settled' },
-      ],
-      transactions: [
-        { signature: '8Lm...z53', type: 'Settlement', amount: 58.6, status: 'Confirmed' },
-        { signature: '4Ke...r88', type: 'Claim', amount: 91.0, status: 'Confirmed' },
-        { signature: '6Yo...p61', type: 'Treasury route', amount: 14.7, status: 'Confirmed' },
-      ],
-      staking: {
-        stakedAmount: 900,
-        lockStatus: 'Active',
-        slashRisk: 'Low',
-      },
-    },
-  },
-]
+}
+
+const DEFAULT_NODE = DEFAULT_ACCOUNT.dashboard.data[0]
 
 function clone(data) {
   return JSON.parse(JSON.stringify(data))
 }
 
-function readStoredOperatorAccounts() {
-  if (typeof window === 'undefined') return clone(DEFAULT_OPERATOR_ACCOUNTS)
+export function getActiveDeviceCityKeys() {
+  return ['ktm']
+}
+
+function shapeAccount(raw = {}) {
+  return {
+    ...clone(DEFAULT_ACCOUNT),
+    ...raw,
+    dashboard: {
+      ...clone(DEFAULT_ACCOUNT.dashboard),
+      ...(raw.dashboard ?? {}),
+      data: Array.isArray(raw.dashboard?.data) && raw.dashboard.data.length
+        ? raw.dashboard.data.map((entry) => ({
+            ...clone(DEFAULT_NODE),
+            ...entry,
+            location: {
+              ...clone(DEFAULT_NODE.location),
+              ...(entry.location ?? {}),
+            },
+          }))
+        : clone(DEFAULT_ACCOUNT.dashboard.data),
+    },
+  }
+}
+
+function readStoredAccount() {
+  if (typeof window === 'undefined') return shapeAccount()
 
   try {
     const raw = window.localStorage.getItem(TOKENIZATION_DEMO_STORAGE_KEY)
-    if (!raw) {
-      const seeded = clone(DEFAULT_OPERATOR_ACCOUNTS)
-      window.localStorage.setItem(TOKENIZATION_DEMO_STORAGE_KEY, JSON.stringify(seeded))
-      return seeded
-    }
-
-    return JSON.parse(raw)
+    const parsed = raw ? JSON.parse(raw) : null
+    const account = shapeAccount(parsed)
+    window.localStorage.setItem(TOKENIZATION_DEMO_STORAGE_KEY, JSON.stringify(account))
+    return account
   } catch {
-    return clone(DEFAULT_OPERATOR_ACCOUNTS)
+    return shapeAccount()
   }
 }
 
-export function getAllDemoOperatorAccounts() {
-  return readStoredOperatorAccounts()
-}
-
-export function saveAllDemoOperatorAccounts(nextAccounts) {
+function writeStoredAccount(account) {
   if (typeof window === 'undefined') return
-  window.localStorage.setItem(TOKENIZATION_DEMO_STORAGE_KEY, JSON.stringify(nextAccounts))
+  window.localStorage.setItem(TOKENIZATION_DEMO_STORAGE_KEY, JSON.stringify(shapeAccount(account)))
 }
 
-export function resetDemoOperatorAccounts() {
-  if (typeof window === 'undefined') return
-  window.localStorage.setItem(TOKENIZATION_DEMO_STORAGE_KEY, JSON.stringify(DEFAULT_OPERATOR_ACCOUNTS))
+function toDashboardPayload(account) {
+  return {
+    owner: {
+      name: account.fullName,
+      email: account.email,
+    },
+    success: account.dashboard.success,
+    data: clone(account.dashboard.data),
+  }
 }
 
-export function getDemoOperatorAccounts() {
-  return readStoredOperatorAccounts().map((account) => ({
-    email: account.credentials.email,
-    deviceId: account.credentials.deviceId,
-    ownerName: account.dashboard.owner.name,
-  }))
+export function getDemoOperatorAccount() {
+  return readStoredAccount()
 }
 
-export function getActiveDeviceCityKeys() {
-  return getDeviceCityKeys()
+export function resetDemoOperatorAccount() {
+  writeStoredAccount(DEFAULT_ACCOUNT)
 }
 
-export async function loginOperator({ email, deviceId }) {
+export async function signupOperator({ fullName, email, password }) {
+  const current = readStoredAccount()
   const normalizedEmail = email.trim().toLowerCase()
-  const normalizedDevice = deviceId.trim().toUpperCase()
 
-  const account = readStoredOperatorAccounts().find(
-    (item) =>
-      item.credentials.email.toLowerCase() === normalizedEmail &&
-      item.credentials.deviceId.toUpperCase() === normalizedDevice
-  )
-
-  if (!account) {
-    throw new Error('We could not match that email and device ID. Use one of the registered operator devices.')
+  if (normalizedEmail === current.email.toLowerCase()) {
+    throw new Error('This email is already registered. Please log in instead.')
   }
 
-  return clone(account.dashboard)
+  const nextAccount = shapeAccount({
+    ...current,
+    fullName: fullName.trim(),
+    email: normalizedEmail,
+    password: password.trim(),
+  })
+
+  writeStoredAccount(nextAccount)
+  return toDashboardPayload(nextAccount)
+}
+
+export async function loginOperator({ email, password }) {
+  const current = readStoredAccount()
+  const normalizedEmail = email.trim().toLowerCase()
+  const normalizedPassword = password.trim()
+
+  if (
+    current.email.toLowerCase() !== normalizedEmail ||
+    current.password !== normalizedPassword
+  ) {
+    throw new Error('We could not match that email and password.')
+  }
+
+  return toDashboardPayload(current)
 }
 
 export async function getOperatorDashboard(session) {
-  if (!session) {
+  if (!session?.ownerEmail) {
     throw new Error('Missing session')
   }
 
-  return loginOperator({
-    email: session.ownerEmail,
-    deviceId: session.deviceId,
-  })
+  const current = readStoredAccount()
+
+  if (current.email.toLowerCase() !== String(session.ownerEmail).toLowerCase()) {
+    throw new Error('Missing operator account')
+  }
+
+  return toDashboardPayload(current)
 }

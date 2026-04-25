@@ -13,19 +13,19 @@ const STEPS = [
     num: '02',
     icon: 'Data',
     title: 'Transmit & Process',
-    desc: 'Each ESP32 streams validated device telemetry to the BREEZO pipeline, where readings are normalized for the dashboard and future backend APIs.',
+    desc: 'Each ESP32 streams validated device telemetry to the BREEZO pipeline, where readings are normalized for the dashboard.',
   },
   {
     num: '03',
     icon: 'AQI',
     title: 'Analyze & Visualize',
-    desc: 'PM2.5 readings are converted into AQI, combined with temperature, humidity, pressure, gas sensor, and GPS context, then shown city by city.',
+    desc: 'PM2.5 readings are converted into AQI, combined with temperature, humidity, atmospheric pressure, and GPS context, then shown city by city.',
   },
   {
     num: '04',
     icon: 'Token',
     title: 'Earn & Expand',
-    desc: 'Operators will earn $BREEZO on Solana for verified uptime, coverage, and quality once the backend scoring and settlement layer goes live.',
+    desc: 'Users will earn $BREEZO on Solana for verified uptime, coverage.',
   },
 ]
 

@@ -1,44 +1,62 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Navigate } from 'react-router-dom'
 import {
-  buildTokenSession,
   clearTokenSession,
   readTokenSession,
   TOKEN_SESSION_EVENT,
   TOKEN_SESSION_KEY,
-  writeTokenSession,
 } from '../lib/tokenization'
-import {
-  getDemoOperatorAccounts,
-  getOperatorDashboard,
-  loginOperator,
-} from '../lib/tokenizationApi'
+import { getOperatorDashboard } from '../lib/tokenizationApi'
 import styles from './TokenizationPage.module.css'
 
-function scoreColor(score) {
-  if (score >= 95) return 'var(--sky)'
-  if (score >= 88) return 'var(--teal)'
-  if (score >= 78) return 'var(--amber)'
+const TIMING = {
+  hero: 80,
+  strip: 210,
+  metrics: 360,
+  details: 520,
+}
+
+function statusTone(level) {
+  if (level === 'GOOD') return 'var(--teal)'
+  if (level === 'MODERATE') return 'var(--amber)'
   return 'var(--red)'
 }
 
-function MetricTile({ label, value, note, tone = 'sky' }) {
+function formatLastSeen(value) {
+  return new Date(value).toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  })
+}
+
+function MetricCard({ label, value, note, tone = 'var(--sky)' }) {
   return (
-    <div className={styles.metricTile}>
+    <article className={styles.metricCard}>
       <div className={styles.metricLabel}>{label}</div>
-      <div className={styles.metricValue} style={{ color: `var(--${tone})` }}>{value}</div>
+      <div className={styles.metricValue} style={{ color: tone }}>{value}</div>
       <div className={styles.metricNote}>{note}</div>
-    </div>
+    </article>
   )
 }
 
 export default function TokenizationPage() {
+  /* --------------------------------------------------------
+   * PAGE CONTENT STORYBOARD
+   *
+   *   0ms  shell visible
+   *  80ms  hero fades in
+   * 210ms  status strip reveals
+   * 360ms  metric tiles cascade in
+   * 520ms  detail panels settle in
+   * -------------------------------------------------------- */
   const [session, setSession] = useState(null)
   const [dashboard, setDashboard] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [form, setForm] = useState({ name: '', email: '', deviceId: '' })
-  const [error, setError] = useState('')
-  const demoAccounts = getDemoOperatorAccounts()
+  const [claiming, setClaiming] = useState(false)
+  const [claimMessage, setClaimMessage] = useState('')
+  const [stage, setStage] = useState(0)
 
   useEffect(() => {
     const syncSession = async () => {
@@ -50,12 +68,6 @@ export default function TokenizationPage() {
         setLoading(false)
         return
       }
-
-      setForm({
-        name: stored.ownerName ?? '',
-        email: stored.ownerEmail ?? '',
-        deviceId: stored.deviceId ?? '',
-      })
 
       try {
         setLoading(true)
@@ -78,12 +90,6 @@ export default function TokenizationPage() {
         setLoading(false)
         return
       }
-
-      setForm({
-        name: nextSession.ownerName ?? '',
-        email: nextSession.ownerEmail ?? '',
-        deviceId: nextSession.deviceId ?? '',
-      })
 
       try {
         setLoading(true)
@@ -112,350 +118,238 @@ export default function TokenizationPage() {
     }
   }, [])
 
-  function handleChange(event) {
-    const { name, value } = event.target
-    setForm((current) => ({ ...current, [name]: value }))
-  }
+  useEffect(() => {
+    if (loading || !dashboard) return undefined
 
-  async function handleSubmit(event) {
-    event.preventDefault()
-    setError('')
-
-    try {
-      setLoading(true)
-      const nextDashboard = await loginOperator({
-        email: form.email,
-        deviceId: form.deviceId,
-      })
-      const nextSession = buildTokenSession(nextDashboard)
-      writeTokenSession(nextSession)
-      setSession(nextSession)
-      setDashboard(nextDashboard)
-      setForm({
-        name: nextDashboard.owner.name,
-        email: nextDashboard.owner.email,
-        deviceId: nextDashboard.device.deviceId,
-      })
-    } catch (e) {
-      setError(e.message)
-    } finally {
-      setLoading(false)
+    const prefersReducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches
+    if (prefersReducedMotion) {
+      setStage(4)
+      return undefined
     }
+
+    setStage(0)
+    const timers = []
+    timers.push(window.setTimeout(() => setStage(1), TIMING.hero))
+    timers.push(window.setTimeout(() => setStage(2), TIMING.strip))
+    timers.push(window.setTimeout(() => setStage(3), TIMING.metrics))
+    timers.push(window.setTimeout(() => setStage(4), TIMING.details))
+
+    return () => timers.forEach(window.clearTimeout)
+  }, [loading, dashboard])
+
+  if (!loading && !session) {
+    return <Navigate to="/login" replace />
   }
 
-  function handleLogout() {
-    clearTokenSession()
-    setSession(null)
-    setDashboard(null)
-    setLoading(false)
-    setError('')
-  }
-
-  if (!session || !dashboard) {
+  if (loading || !dashboard) {
     return (
       <div className={styles.page}>
-        <section className={styles.authShell}>
-          <div className={styles.authIntro}>
-            <p className={styles.kicker}>Private Operator Area</p>
-            <h1 className={styles.title}>Tokenization dashboard access</h1>
-            <p className={styles.subtitle}>
-              This frontend now uses a backend-ready dashboard shape: owner, device, metrics, epochs, transactions, and staking. Later, you can replace one API layer and keep the UI.
-            </p>
-
-            <div className={styles.introGrid}>
-              <div className={styles.introCard}>
-                <div className={styles.introTitle}>What backend will replace later</div>
-                <p className={styles.introText}>
-                  Login, operator profile, epoch scoring, claimable rewards, Solana transactions, and staking state should all come from your backend or indexer later.
-                </p>
-              </div>
-              <div className={styles.introCard}>
-                <div className={styles.introTitle}>What stays in frontend</div>
-                <p className={styles.introText}>
-                  Layout, charts, tables, session UX, dropdowns, and all the operator dashboard visuals can stay almost exactly as they are now.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className={styles.authCard}>
-            <div className={styles.formHeader}>
-              <div>
-                <div className={styles.formLabel}>Operator sign-in</div>
-                <div className={styles.formTitle}>Access your token dashboard</div>
-              </div>
-              <span className={styles.previewBadge}>Dummy API mode</span>
-            </div>
-
-            <form className={styles.form} onSubmit={handleSubmit}>
-              <label className={styles.field}>
-                <span className={styles.fieldLabel}>Operator name</span>
-                <input
-                  className={styles.input}
-                  type="text"
-                  name="name"
-                  value={form.name}
-                  onChange={handleChange}
-                  placeholder="Your name"
-                  autoComplete="name"
-                />
-              </label>
-
-              <label className={styles.field}>
-                <span className={styles.fieldLabel}>Email</span>
-                <input
-                  className={styles.input}
-                  type="email"
-                  name="email"
-                  value={form.email}
-                  onChange={handleChange}
-                  placeholder="operator@breezo.network"
-                  autoComplete="email"
-                  required
-                />
-              </label>
-
-              <label className={styles.field}>
-                <span className={styles.fieldLabel}>Device ID</span>
-                <input
-                  className={styles.input}
-                  type="text"
-                  name="deviceId"
-                  value={form.deviceId}
-                  onChange={handleChange}
-                  placeholder="KTM-01-8842"
-                  autoComplete="off"
-                  required
-                />
-              </label>
-
-              {error && <div className={styles.errorBox} role="alert">{error}</div>}
-
-              <button className={styles.primaryBtn} type="submit" disabled={loading}>
-                {loading ? 'Loading...' : 'Open token dashboard'}
-              </button>
-            </form>
-
-            <div className={styles.demoBlock}>
-              <div className={styles.demoLabel}>Demo operator accounts</div>
-              <div className={styles.demoList}>
-                {demoAccounts.map((item) => (
-                  <div className={styles.demoRow} key={item.deviceId}>
-                    <span>{item.email}</span>
-                    <span>{item.deviceId}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
+        <section className={styles.loadingCard}>
+          <div className={styles.kicker}>Private dashboard</div>
+          <h1 className={styles.title}>Loading your node cockpit...</h1>
         </section>
       </div>
     )
   }
 
-  const { owner, device, metrics, epochs, transactions, staking } = dashboard
+  const node = dashboard.data[0]
+
+  function handleClaimReward() {
+    setClaimMessage('')
+    setClaiming(true)
+
+    window.setTimeout(() => {
+      setClaiming(false)
+      setClaimMessage(`Reward claimed successfully for ${node.nodeId}.`)
+    }, 900)
+  }
 
   return (
     <div className={styles.page}>
-      <section className={styles.hero}>
-        <div className={styles.heroGlow} />
-        <div className={styles.heroCopy}>
-          <p className={styles.kicker}>Authenticated Tokenization Dashboard</p>
-          <h1 className={styles.title}>Solana-ready rewards for {owner.name}</h1>
-          <p className={styles.subtitle}>
-            This page is already shaped like a real backend response. Later, your backend can return the same sections and this UI can stay in place.
-          </p>
-          <div className={styles.heroMeta}>
-            <span className={styles.metaPill}>{owner.email}</span>
-            <span className={styles.metaPill}>{device.wallet}</span>
-            <button className={styles.secondaryBtn} onClick={handleLogout} type="button">
-              Sign out
-            </button>
+      <section className={`${styles.heroGrid} ${styles.revealBase} ${stage >= 1 ? styles.revealVisible : ''}`}>
+        <div className={styles.heroCard}>
+          <div className={styles.heroTopline}>
+            <span className={styles.kicker}>Private node cockpit</span>
+            <span className={styles.levelBadge} style={{ color: statusTone(node.aqiLevel) }}>
+              {node.aqiLevel}
+            </span>
           </div>
-        </div>
 
-        <div className={styles.identityCard}>
-          <div className={styles.identityHeader}>
+          <div className={styles.heroBody}>
             <div>
-              <div className={styles.formLabel}>Registered node</div>
-              <div className={styles.identityTitle}>{device.deviceId}</div>
+              <h1 className={styles.title}>{dashboard.owner.name}</h1>
+              <p className={styles.subtitle}>
+                Premium operator view for your personal AQI device, BMP pressure feed, sync health,
+                and reward state.
+              </p>
             </div>
-            <span className={styles.tierBadge}>{device.tier} tier</span>
+
+            <div className={styles.heroActions}>
+              <button className={styles.primaryBtn} onClick={handleClaimReward} type="button" disabled={claiming}>
+                {claiming ? 'Claiming...' : 'Claim Reward'}
+              </button>
+            </div>
           </div>
 
-          <div className={styles.identityGrid}>
-            <div className={styles.identityRow}>
-              <span className={styles.identityKey}>City</span>
-              <span className={styles.identityVal}>{device.cityLabel}</span>
-            </div>
-            <div className={styles.identityRow}>
-              <span className={styles.identityKey}>Wallet</span>
-              <span className={styles.identityVal}>{device.wallet}</span>
-            </div>
-            <div className={styles.identityRow}>
-              <span className={styles.identityKey}>Epoch status</span>
-              <span className={styles.identityVal}>{metrics.epochStatus}</span>
-            </div>
-            <div className={styles.identityRow}>
-              <span className={styles.identityKey}>Node status</span>
-              <span className={styles.identityVal}>{device.status}</span>
-            </div>
+          <div className={styles.metaRow}>
+            <span className={styles.metaPill}>{dashboard.owner.email}</span>
+            <span className={styles.metaPill}>{node.nodeId}</span>
+            <span className={styles.metaPill}>
+              {node.location.lat}, {node.location.lng}
+            </span>
+            <span className={styles.metaPill}>Last seen {formatLastSeen(node.lastSeen)}</span>
           </div>
+
+          {claimMessage && <div className={styles.successBox}>{claimMessage}</div>}
         </div>
+
+        <aside className={styles.sideCard}>
+          <div className={styles.sectionLabel}>Node state</div>
+          <div className={styles.sideTitle}>Live operator summary</div>
+
+          <div className={styles.sideStack}>
+            <div className={styles.sideStat}>
+              <span>Node ID</span>
+              <strong>{node.nodeId}</strong>
+            </div>
+            <div className={styles.sideStat}>
+              <span>Syncing</span>
+              <strong>{node.syncing ? 'Syncing' : 'Synced'}</strong>
+            </div>
+            <div className={styles.sideStat}>
+              <span>Reward</span>
+              <strong>{node.reward.toFixed(2)} BREEZO</strong>
+            </div>
+            <div className={styles.sideStat}>
+              <span>AQI Level</span>
+              <strong style={{ color: statusTone(node.aqiLevel) }}>{node.aqiLevel}</strong>
+            </div>
+          </div>
+        </aside>
       </section>
 
-      <section className={styles.metricsGrid}>
-        <MetricTile
-          label="Claimable $BREEZO"
-          value={metrics.claimableRewards.toFixed(1)}
-          note="Ready for operator claim after settlement confirmation."
-          tone="sky"
-        />
-        <MetricTile
-          label="Pending $BREEZO"
-          value={metrics.pendingRewards.toFixed(1)}
-          note="Estimated rewards for the current settlement cycle."
-          tone="teal"
-        />
-        <MetricTile
-          label="Epoch score"
-          value={metrics.epochScore.toFixed(1)}
-          note="Combined uptime, quality, coverage, and verification score."
-          tone="amber"
-        />
-        <MetricTile
-          label="Reputation"
-          value={`${metrics.reputation}`}
-          note="Device-linked reputation used for future staking and routing trust."
-          tone="purple"
-        />
+      <section className={`${styles.statusStrip} ${styles.revealBase} ${stage >= 2 ? styles.revealVisible : ''}`}>
+        <article className={styles.stripCard}>
+          <span className={styles.stripLabel}>AQI Status</span>
+          <strong style={{ color: statusTone(node.aqiLevel) }}>{node.aqiLevel}</strong>
+          <p>{node.aqi} live AQI from your current node output.</p>
+        </article>
+        <article className={styles.stripCard}>
+          <span className={styles.stripLabel}>BMP Pressure</span>
+          <strong>{node.bmp.toFixed(1)}</strong>
+          <p>Pressure reading captured from your BMP sensor.</p>
+        </article>
+        <article className={styles.stripCard}>
+          <span className={styles.stripLabel}>Sync State</span>
+          <strong>{node.syncing ? 'Syncing' : 'Synced'}</strong>
+          <p>Live device state for the latest telemetry cycle.</p>
+        </article>
+        <article className={styles.stripCard}>
+          <span className={styles.stripLabel}>Claim State</span>
+          <strong>{claiming ? 'Processing' : 'Ready'}</strong>
+          <p>Use the claim action when rewards are available.</p>
+        </article>
       </section>
 
-      <section className={styles.mainGrid}>
-        <div className={styles.panel}>
+      <section className={`${styles.metricsGrid} ${styles.revealBase} ${stage >= 3 ? styles.revealVisible : ''}`}>
+        <MetricCard label="AQI" value={node.aqi} note="Current air quality score from your node." tone={statusTone(node.aqiLevel)} />
+        <MetricCard label="PM2.5" value={node.pm25.toFixed(1)} note="Fine particulate output from your device." tone="var(--sky)" />
+        <MetricCard label="BMP" value={node.bmp.toFixed(1)} note="Pressure reading sourced from the BMP sensor." tone="var(--purple)" />
+        <MetricCard label="Reward" value={node.reward.toFixed(2)} note="Current reward allocation for this active cycle." tone="var(--teal)" />
+      </section>
+
+      <section className={`${styles.dashboardGrid} ${styles.revealBase} ${stage >= 4 ? styles.revealVisible : ''}`}>
+        <article className={styles.panel}>
           <div className={styles.panelHeader}>
             <div>
-              <div className={styles.formLabel}>Score engine</div>
-              <div className={styles.panelTitle}>How this device earns</div>
+              <div className={styles.sectionLabel}>Telemetry</div>
+              <div className={styles.panelTitle}>Personal dashboard fields</div>
             </div>
-            <span className={styles.panelHint}>Backend-computed later</span>
           </div>
 
-          <div className={styles.scoreList}>
-            {[
-              { label: 'Uptime score', value: metrics.uptime },
-              { label: 'Data quality', value: metrics.quality },
-              { label: 'Coverage bonus', value: metrics.coverage },
-              { label: 'Verification', value: metrics.verification },
-            ].map((item) => (
-              <div className={styles.scoreRow} key={item.label}>
-                <div className={styles.scoreTop}>
-                  <span className={styles.scoreLabel}>{item.label}</span>
-                  <span className={styles.scoreValue} style={{ color: scoreColor(item.value) }}>
-                    {item.value}%
-                  </span>
-                </div>
-                <div className={styles.scoreTrack}>
-                  <div
-                    className={styles.scoreFill}
-                    style={{ width: `${item.value}%`, background: scoreColor(item.value) }}
-                  />
-                </div>
-              </div>
-            ))}
+          <div className={styles.fieldGrid}>
+            <div className={styles.fieldCard}>
+              <span>Node ID</span>
+              <strong>{node.nodeId}</strong>
+            </div>
+            <div className={styles.fieldCard}>
+              <span>Temperature</span>
+              <strong>{node.temperature.toFixed(1)} deg C</strong>
+            </div>
+            <div className={styles.fieldCard}>
+              <span>Humidity</span>
+              <strong>{node.humidity.toFixed(1)} %</strong>
+            </div>
+            <div className={styles.fieldCard}>
+              <span>PM2.5</span>
+              <strong>{node.pm25.toFixed(1)}</strong>
+            </div>
+            <div className={styles.fieldCard}>
+              <span>BMP</span>
+              <strong>{node.bmp.toFixed(1)}</strong>
+            </div>
+            <div className={styles.fieldCard}>
+              <span>AQI</span>
+              <strong>{node.aqi}</strong>
+            </div>
+            <div className={styles.fieldCard}>
+              <span>AQI Level</span>
+              <strong style={{ color: statusTone(node.aqiLevel) }}>{node.aqiLevel}</strong>
+            </div>
+            <div className={styles.fieldCard}>
+              <span>Reward</span>
+              <strong>{node.reward.toFixed(2)} BREEZO</strong>
+            </div>
+            <div className={styles.fieldCard}>
+              <span>Syncing Status</span>
+              <strong>{node.syncing ? 'Syncing' : 'Synced'}</strong>
+            </div>
+            <div className={styles.fieldCard}>
+              <span>Latitude</span>
+              <strong>{node.location.lat}</strong>
+            </div>
+            <div className={styles.fieldCard}>
+              <span>Longitude</span>
+              <strong>{node.location.lng}</strong>
+            </div>
+            <div className={styles.fieldCard}>
+              <span>Last Seen</span>
+              <strong>{formatLastSeen(node.lastSeen)}</strong>
+            </div>
           </div>
-        </div>
+        </article>
 
-        <div className={styles.panel}>
+        <article className={styles.panel}>
           <div className={styles.panelHeader}>
             <div>
-              <div className={styles.formLabel}>Treasury and staking</div>
-              <div className={styles.panelTitle}>Capital state</div>
-            </div>
-            <span className={styles.panelHint}>Solana settlement ready</span>
-          </div>
-
-          <div className={styles.routeList}>
-            <div className={styles.routeCard}>
-              <div className={styles.routeTop}>
-                <span className={styles.routeLabel}>Lifetime rewards</span>
-                <span className={styles.routeValue}>{metrics.lifetimeRewards.toFixed(1)} $BREEZO</span>
-              </div>
-              <p className={styles.routeText}>Total settled and attributed rewards for this registered device.</p>
-            </div>
-            <div className={styles.routeCard}>
-              <div className={styles.routeTop}>
-                <span className={styles.routeLabel}>Climate pool route</span>
-                <span className={styles.routeValue}>{metrics.climatePoolShare}%</span>
-              </div>
-              <p className={styles.routeText}>Reserved flow into tree plantation and broader clean-air mission campaigns.</p>
-            </div>
-            <div className={styles.routeCard}>
-              <div className={styles.routeTop}>
-                <span className={styles.routeLabel}>Staked amount</span>
-                <span className={styles.routeValue}>{staking.stakedAmount} $BREEZO</span>
-              </div>
-              <p className={styles.routeText}>Lock status: {staking.lockStatus}. Slash risk: {staking.slashRisk}.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className={styles.bottomGrid}>
-        <div className={styles.historySection}>
-          <div className={styles.sectionHeader}>
-            <div>
-              <div className={styles.formLabel}>Settlement history</div>
-              <div className={styles.panelTitle}>Recent reward epochs for {device.deviceId}</div>
-            </div>
-            <Link className={styles.linkBtn} to="/network">
-              View roadmap
-            </Link>
-          </div>
-
-          <div className={styles.historyTable}>
-            <div className={styles.historyHead}>
-              <span>Epoch</span>
-              <span>Score</span>
-              <span>Rewards</span>
-              <span>Status</span>
-            </div>
-            {epochs.map((row) => (
-              <div className={styles.historyRow} key={row.epoch}>
-                <span>{row.epoch}</span>
-                <span>{row.score}%</span>
-                <span>{row.rewards.toFixed(1)} $BREEZO</span>
-                <span>{row.status}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className={styles.historySection}>
-          <div className={styles.sectionHeader}>
-            <div>
-              <div className={styles.formLabel}>Transaction history</div>
-              <div className={styles.panelTitle}>Recent Solana-linked records</div>
+              <div className={styles.sectionLabel}>Context</div>
+              <div className={styles.panelTitle}>Operator overview</div>
             </div>
           </div>
 
-          <div className={styles.historyTable}>
-            <div className={styles.historyHead}>
-              <span>Signature</span>
-              <span>Type</span>
-              <span>Amount</span>
-              <span>Status</span>
+          <div className={styles.contextStack}>
+            <div className={styles.contextCard}>
+              <span>Account owner</span>
+              <strong>{dashboard.owner.name}</strong>
+              <p>Private identity linked to this node telemetry stream.</p>
             </div>
-            {transactions.map((row) => (
-              <div className={styles.historyRow} key={row.signature}>
-                <span>{row.signature}</span>
-                <span>{row.type}</span>
-                <span>{row.amount.toFixed(1)} $BREEZO</span>
-                <span>{row.status}</span>
-              </div>
-            ))}
+            <div className={styles.contextCard}>
+              <span>Email</span>
+              <strong>{dashboard.owner.email}</strong>
+              <p>Primary login for the premium operator surface.</p>
+            </div>
+            <div className={styles.contextCard}>
+              <span>Claim state</span>
+              <strong>{claiming ? 'Processing' : 'Available'}</strong>
+              <p>Use the claim action in the hero area when rewards are ready.</p>
+            </div>
+            <div className={styles.contextCard}>
+              <span>Dashboard data</span>
+              <strong>{dashboard.success ? 'Connected' : 'Unavailable'}</strong>
+              <p>Dummy frontend data for now, ready to be swapped with backend later.</p>
+            </div>
           </div>
-        </div>
+        </article>
       </section>
     </div>
   )

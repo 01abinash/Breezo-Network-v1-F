@@ -67,25 +67,6 @@
 
 .right { display: flex; align-items: center; gap: 12px; }
 
-.waitlistBtn {
-  background: transparent;
-  color: var(--t1);
-  padding: 8px 16px;
-  border-radius: 100px;
-  font-size: 13px;
-  font-weight: 700;
-  font-family: var(--font);
-  border: 1px solid rgba(56, 189, 248, 0.28);
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.waitlistBtn:hover {
-  border-color: var(--sky);
-  color: var(--sky);
-  transform: translateY(-1px);
-}
-
 .ctaBtn {
   background: var(--sky);
   color: #07080A;
@@ -127,7 +108,6 @@
 
 .profileBtn:focus-visible,
 .dropdownItem:focus-visible,
-.waitlistBtn:focus-visible,
 .ctaBtn:focus-visible,
 .hamburger:focus-visible {
   outline: 2px solid var(--sky);
@@ -244,7 +224,6 @@
   }
   .links.open { transform: translateY(0); }
   .hamburger { display: flex; }
-  .waitlistBtn { display: none; }
   .profileName { max-width: 96px; }
   .dropdown {
     right: 0;

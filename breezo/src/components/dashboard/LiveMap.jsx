@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import L from 'leaflet'
+import { MapContainer, Marker, Popup, TileLayer, ZoomControl, useMap } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import { CITIES } from '../../lib/aqi'
 import { buildDeviceAirSnapshot, getActiveDeviceCityKeys, getDeviceDemo } from '../../lib/deviceDemo'
@@ -38,14 +39,37 @@ function createMarkerIcon(color, isActive) {
   })
 }
 
-export default function LiveMap({ activeCity }) {
-  const containerRef = useRef(null)
-  const mapRef = useRef(null)
-  const markersRef = useRef([])
-  const resizeObserverRef = useRef(null)
-  const [mapError, setMapError] = useState('')
-  const [mapReady, setMapReady] = useState(false)
+function FitMapToDevices({ devices, selectedCoords }) {
+  const map = useMap()
 
+  useEffect(() => {
+    if (!devices.length) {
+      map.setView(DEFAULT_CENTER, 9)
+      return
+    }
+
+    if (devices.length === 1) {
+      map.setView(devices[0].coords, 11)
+      return
+    }
+
+    if (selectedCoords) {
+      map.flyTo(selectedCoords, Math.max(map.getZoom(), 12), {
+        animate: true,
+        duration: 0.8,
+      })
+      return
+    }
+
+    map.fitBounds(L.latLngBounds(devices.map((device) => device.coords)), {
+      padding: [28, 28],
+    })
+  }, [devices, map, selectedCoords])
+
+  return null
+}
+
+export default function LiveMap({ activeCity }) {
   const devices = useMemo(() => {
     return getActiveDeviceCityKeys().map((cityKey) => {
       const city = CITIES[cityKey]
@@ -59,121 +83,37 @@ export default function LiveMap({ activeCity }) {
         aqi: snapshot.aqi,
         status: snapshot.info.label,
         color: getMarkerColor(snapshot.aqi),
+        connectivity: snapshot.connectivity,
+        lastSeen: snapshot.lastSeen,
+        uptime: snapshot.uptime,
+        sampleRate: snapshot.sampleRate,
+        telemetry: {
+          pm25: snapshot.pm25,
+          temperature: snapshot.temperature,
+          humidity: snapshot.humidity,
+          pressure: snapshot.pressure,
+          mq135: snapshot.mq135,
+        },
       }
     })
   }, [])
 
-  useEffect(() => {
-    if (!containerRef.current || mapRef.current) return
-
-    try {
-      if (containerRef.current.offsetHeight === 0) {
-        setMapError('Map container height is zero.')
-        return
-      }
-
-      const map = L.map(containerRef.current, {
-        zoomControl: false,
-        attributionControl: false,
-        dragging: true,
-        scrollWheelZoom: true,
-        doubleClickZoom: true,
-        touchZoom: true,
-        boxZoom: true,
-        keyboard: true,
-      })
-
-      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-      }).addTo(map)
-
-      L.control.zoom({ position: 'bottomright' }).addTo(map)
-      map.whenReady(() => {
-        setMapReady(true)
-      })
-      mapRef.current = map
-
-      resizeObserverRef.current = new ResizeObserver(() => {
-        map.invalidateSize()
-      })
-      resizeObserverRef.current.observe(containerRef.current)
-
-      requestAnimationFrame(() => map.invalidateSize())
-      window.setTimeout(() => map.invalidateSize(), 120)
-      window.setTimeout(() => map.invalidateSize(), 420)
-
-      setMapError('')
-      setMapReady(true)
-    } catch (error) {
-      setMapError(error.message || 'Unable to initialize map.')
-      setMapReady(false)
-    }
-  }, [])
+  const [selectedCityKey, setSelectedCityKey] = useState(activeCity || devices[0]?.cityKey || null)
 
   useEffect(() => {
-    const map = mapRef.current
-    if (!map) return
-
-    try {
-      map.invalidateSize()
-
-      markersRef.current.forEach((marker) => marker.remove())
-      markersRef.current = []
-
-      devices.forEach((device) => {
-        const marker = L.marker(device.coords, {
-          icon: createMarkerIcon(device.color, device.cityKey === activeCity),
-        })
-
-        marker.bindPopup(
-          `<div class="breezo-popup">
-            <div class="breezo-popup__city">${device.cityLabel}</div>
-            <div class="breezo-popup__aqi">AQI ${device.aqi}</div>
-          </div>`,
-          { closeButton: false, offset: [0, -8] }
-        )
-
-        marker.addTo(map)
-        markersRef.current.push(marker)
-      })
-
-      if (devices.length === 1) {
-        map.setView(devices[0].coords, 11)
-      } else if (devices.length > 1) {
-        map.fitBounds(L.latLngBounds(devices.map((d) => d.coords)), {
-          padding: [28, 28],
-        })
-      } else {
-        map.setView(DEFAULT_CENTER, 9)
-      }
-
-      requestAnimationFrame(() => map.invalidateSize())
-      window.setTimeout(() => map.invalidateSize(), 180)
-    } catch (error) {
-      setMapError(error.message || 'Unable to load map data.')
-      setMapReady(false)
+    if (activeCity) {
+      setSelectedCityKey(activeCity)
     }
-  }, [activeCity, devices])
+  }, [activeCity])
 
-  useEffect(() => {
-    return () => {
-      markersRef.current.forEach((marker) => marker.remove())
-      markersRef.current = []
-      resizeObserverRef.current?.disconnect()
-      resizeObserverRef.current = null
-      if (mapRef.current) {
-        mapRef.current.remove()
-        mapRef.current = null
-      }
-    }
-  }, [])
+  const selectedDevice = devices.find((device) => device.cityKey === selectedCityKey) ?? devices[0]
 
   return (
     <section className={styles.panel}>
       <div className={styles.header}>
         <div>
           <div className={styles.kicker}>Device network map</div>
-          <h3 className={styles.title}>Live AQI device locations</h3>
+          <h3 className={styles.title}>Live device operations view</h3>
         </div>
         <div className={styles.legend}>
           <span className={styles.legendItem}><i style={{ background: '#4ADE80' }} />Clean</span>
@@ -182,25 +122,134 @@ export default function LiveMap({ activeCity }) {
         </div>
       </div>
 
-      {mapError && (
-        <div className={styles.errorState}>
-          <div className={styles.errorTitle}>Leaflet map unavailable</div>
-          <div className={styles.errorText}>{mapError}</div>
-        </div>
-      )}
-
-      <div className={styles.mapShell}>
-        <div
-          ref={containerRef}
-          className={styles.mapFrame}
-          style={{ minHeight: '420px', height: '420px', width: '100%' }}
-        />
-        {!mapReady && !mapError && (
-          <div className={styles.loadingState}>
-            <div className={styles.loadingTitle}>Loading map...</div>
-            <div className={styles.loadingText}>Preparing the Leaflet device view.</div>
+      <div className={styles.layout}>
+        <div className={styles.mapShell}>
+          <div className={styles.mapTopBar}>
+            <span className={styles.mapBadge}>Leaflet live map</span>
+            <span className={styles.mapMeta}>{devices.length} node{devices.length === 1 ? '' : 's'} tracked</span>
           </div>
-        )}
+
+          <MapContainer
+            center={DEFAULT_CENTER}
+            zoom={11}
+            zoomControl={false}
+            attributionControl={false}
+            className={styles.mapFrame}
+            scrollWheelZoom
+          >
+            <TileLayer url="https://tile.openstreetmap.org/{z}/{x}/{y}.png" maxZoom={19} />
+            <ZoomControl position="bottomright" />
+            <FitMapToDevices devices={devices} selectedCoords={selectedDevice?.coords} />
+
+            {devices.map((device) => (
+              <Marker
+                key={device.cityKey}
+                position={device.coords}
+                icon={createMarkerIcon(device.color, device.cityKey === selectedCityKey)}
+                eventHandlers={{
+                  click: () => setSelectedCityKey(device.cityKey),
+                }}
+              >
+                <Popup closeButton={false} offset={[0, -8]}>
+                  <div className={styles.popupContent}>
+                    <div className={styles.popupCity}>{device.cityLabel}</div>
+                    <div className={styles.popupAqi}>AQI {device.aqi}</div>
+                    <div className={styles.popupStatus} style={{ color: device.color }}>{device.status}</div>
+                  </div>
+                </Popup>
+              </Marker>
+            ))}
+          </MapContainer>
+        </div>
+
+        <aside className={styles.nodeRail}>
+          <div className={styles.railHeader}>
+            <div>
+              <div className={styles.railKicker}>Node overview</div>
+              <div className={styles.railTitle}>AQI device status</div>
+            </div>
+          </div>
+
+          <div className={styles.nodeList}>
+            {devices.map((device) => {
+              const isActive = device.cityKey === selectedCityKey
+              const online = device.connectivity === 'online'
+
+              return (
+                <button
+                  key={device.cityKey}
+                  type="button"
+                  className={`${styles.nodeCard} ${isActive ? styles.nodeCardActive : ''}`}
+                  onClick={() => setSelectedCityKey(device.cityKey)}
+                >
+                  <div className={styles.nodeTop}>
+                    <div>
+                      <div className={styles.nodeCity}>{device.cityLabel}</div>
+                      <div className={styles.nodeId}>{device.cityKey.toUpperCase()} · AQI {device.aqi}</div>
+                    </div>
+                    <span className={`${styles.statusPill} ${online ? styles.online : styles.offline}`}>
+                      {online ? 'Online' : 'Offline'}
+                    </span>
+                  </div>
+
+                  <div className={styles.nodeMeta}>
+                    <span>{device.lastSeen}</span>
+                    <span>{device.sampleRate} sync</span>
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+
+          {selectedDevice && (
+            <div className={styles.detailCard}>
+              <div className={styles.detailHeader}>
+                <div>
+                  <div className={styles.railKicker}>Selected node</div>
+                  <div className={styles.detailTitle}>{selectedDevice.cityLabel}</div>
+                </div>
+                <span className={styles.detailAqi} style={{ color: selectedDevice.color }}>
+                  AQI {selectedDevice.aqi}
+                </span>
+              </div>
+
+              <div className={styles.detailGrid}>
+                <div className={styles.detailItem}>
+                  <span>Connectivity</span>
+                  <strong>{selectedDevice.connectivity}</strong>
+                </div>
+                <div className={styles.detailItem}>
+                  <span>Last seen</span>
+                  <strong>{selectedDevice.lastSeen}</strong>
+                </div>
+                <div className={styles.detailItem}>
+                  <span>PM2.5</span>
+                  <strong>{selectedDevice.telemetry.pm25?.toFixed(1)} ug/m3</strong>
+                </div>
+                <div className={styles.detailItem}>
+                  <span>Temperature</span>
+                  <strong>{selectedDevice.telemetry.temperature?.toFixed(1)} C</strong>
+                </div>
+                <div className={styles.detailItem}>
+                  <span>Humidity</span>
+                  <strong>{selectedDevice.telemetry.humidity?.toFixed(1)} %</strong>
+                </div>
+                <div className={styles.detailItem}>
+                  <span>Pressure</span>
+                  <strong>{selectedDevice.telemetry.pressure?.toFixed(1)} hPa</strong>
+                </div>
+                <div className={styles.detailItem}>
+                  <span>MQ135</span>
+                  <strong>{selectedDevice.telemetry.mq135?.toFixed(1)}</strong>
+                </div>
+                <div className={styles.detailItem}>
+                  <span>Uptime</span>
+                  <strong>{selectedDevice.uptime?.toFixed(1)}%</strong>
+                </div>
+              </div>
+            </div>
+          )}
+        </aside>
       </div>
     </section>
   )

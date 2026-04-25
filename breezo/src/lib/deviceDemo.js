@@ -4,8 +4,12 @@ export const DEVICE_DEMO_STORAGE_KEY = 'breezo-device-demo-data'
 
 export const DEFAULT_DEVICE_DEMO_DATA = {
   ktm: {
-    deviceId: 'KTM-01-8842',
+    deviceId: 'KTM-01-1234',
     sourceLabel: 'BREEZO device feed',
+    connectivity: 'online',
+    lastSeen: '12 sec ago',
+    uptime: 99.2,
+    sampleRate: '15s',
     pm25: 62.4,
     temperature: 24.8,
     humidity: 58.4,
@@ -74,6 +78,10 @@ export function getDeviceDemo(cityKey, city = CITIES[cityKey]) {
     stored[cityKey] ?? {
       deviceId: `${fallbackCity.key.toUpperCase()}-01-DEMO`,
       sourceLabel: 'BREEZO device feed',
+      connectivity: 'offline',
+      lastSeen: 'No recent packets',
+      uptime: 0,
+      sampleRate: '15s',
       pm25: 0,
       temperature: 25,
       humidity: 60,
@@ -108,6 +116,10 @@ export function buildDeviceAirSnapshot(cityKey) {
     humidity: device.humidity ?? null,
     pressure: device.pressure ?? null,
     mq135: device.mq135 ?? null,
+    connectivity: device.connectivity ?? 'offline',
+    lastSeen: device.lastSeen ?? 'No recent packets',
+    uptime: device.uptime ?? 0,
+    sampleRate: device.sampleRate ?? '15s',
     gps: device.gps ?? { lat: city.lat, lon: city.lon, source: 'City profile' },
     sourceLabel: device.sourceLabel ?? 'BREEZO device feed',
     trend,
