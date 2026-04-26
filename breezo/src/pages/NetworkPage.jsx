@@ -5,7 +5,6 @@ import styles from './NetworkPage.module.css'
 
 const SENSOR_SPECS = [
   { param: 'PM2.5',            method: 'Laser scattering',     range: '0–999 μg/m³',   accuracy: '±10%' },
-  { param: 'PM10',             method: 'Laser scattering',     range: '0–999 μg/m³',   accuracy: '±10%' },
   { param: 'CO₂',              method: 'NDIR optical',         range: '400–5000 ppm',  accuracy: '±50 ppm' },
   { param: 'NO₂',              method: 'Electrochemical',      range: '0–10 ppm',      accuracy: '±5%' },
   { param: 'Temperature',      method: 'Thermistor (SHT31)',   range: '-40–85°C',      accuracy: '±0.3°C' },

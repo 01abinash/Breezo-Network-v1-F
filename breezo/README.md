@@ -102,7 +102,7 @@ breezo/
 - **Provider**: [Open-Meteo](https://open-meteo.com/en/docs/air-quality-api)
 - **Free**: Yes — no API key, no rate limit for reasonable usage
 - **Endpoint**: `https://air-quality-api.open-meteo.com/v1/air-quality`
-- **Parameters**: `pm2_5`, `pm10`, `nitrogen_dioxide`, `ozone`, `carbon_monoxide`, `sulphur_dioxide`
+- **Parameters**: `pm2_5`, `nitrogen_dioxide`, `ozone`, `carbon_monoxide`, `sulphur_dioxide`
 - **Coverage**: Global, hourly, 7-day forecast + 1-day historical
 - **Cache**: 5 minutes in-memory per city key
 
@@ -123,7 +123,6 @@ Uses the **US EPA AQI formula** based on PM2.5 concentration breakpoints.
 | Pollutant | WHO Annual Mean Guideline |
 |-----------|--------------------------|
 | PM2.5     | 5 μg/m³                  |
-| PM10      | 15 μg/m³                 |
 | NO₂       | 10 μg/m³                 |
 | SO₂       | 40 μg/m³                 |
 | O₃        | 100 μg/m³ (8-hour mean)  |

@@ -9,13 +9,14 @@ export default function Footer() {
         <div className={styles.brand}>
           <h3>BREEZO Network</h3>
           <p>Decentralized air quality infrastructure for the real world. Turning invisible air into visible truth.</p>
-          <div className={styles.badgeRow}><SolanaTag /></div>
+          {/* <div className={styles.badgeRow}><SolanaTag /></div> */}
         </div>
         <div className={styles.col}>
-          <h4>Network</h4>
+          <h4>Product</h4>
           <ul>
             <li><Link to="/dashboard">Live Dashboard</Link></li>
-            <li><Link to="/tokenization">Operator Login</Link></li>
+            <li><Link to="/product">AQI Devices</Link></li>
+            <li><Link to="/tokenization">Login</Link></li>
             <li><a href="#">Data API</a></li>
             <li><a href="#">Node Registry</a></li>
           </ul>

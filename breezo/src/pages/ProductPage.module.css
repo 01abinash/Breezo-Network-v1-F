@@ -1,0 +1,381 @@
+.page {
+  padding-top: 60px;
+}
+
+.hero,
+.section {
+  padding: 72px 5%;
+}
+
+.hero {
+  display: grid;
+  gap: 26px;
+  background:
+    radial-gradient(circle at 82% 18%, rgba(56, 189, 248, 0.1), transparent 24%),
+    radial-gradient(circle at 18% 82%, rgba(167, 139, 250, 0.08), transparent 26%),
+    var(--bg);
+}
+
+.heroCopy {
+  max-width: 860px;
+}
+
+.heroTitle {
+  margin: 14px 0 0;
+  color: var(--t1);
+  font-size: clamp(36px, 5vw, 66px);
+  line-height: 0.95;
+  letter-spacing: -0.065em;
+  font-weight: 900;
+}
+
+.heroDesc {
+  margin: 18px 0 0;
+  max-width: 680px;
+  color: var(--t2);
+  font-size: 16px;
+  line-height: 1.75;
+}
+
+.sectionNav {
+  position: sticky;
+  top: 74px;
+  z-index: 4;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.sectionLink {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
+  border-radius: 999px;
+  text-decoration: none;
+  font: 700 11px/1 var(--mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--t1);
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  backdrop-filter: blur(14px);
+}
+
+.deviceGrid {
+  margin-top: 28px;
+  display: grid;
+  gap: 16px;
+}
+
+.deviceCard {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 22px;
+  padding: 22px;
+  border-radius: 24px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01)),
+    rgba(10, 12, 17, 0.98);
+  box-shadow: 0 18px 54px rgba(0, 0, 0, 0.24);
+}
+
+.deviceVisual {
+  display: grid;
+  place-items: center;
+  gap: 14px;
+  padding: 22px;
+  border-radius: 20px;
+  background:
+    radial-gradient(circle at 50% 24%, rgba(56, 189, 248, 0.16), transparent 28%),
+    rgba(255,255,255,0.025);
+  border: 1px solid rgba(255,255,255,0.06);
+}
+
+.deviceShell {
+  width: 170px;
+  height: 220px;
+  border-radius: 28px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04)),
+    #0b1017;
+  border: 1px solid rgba(255,255,255,0.12);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.08),
+    0 24px 60px rgba(0, 0, 0, 0.28);
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  padding: 18px 16px;
+  gap: 16px;
+}
+
+.deviceCap {
+  width: 84px;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.08);
+}
+
+.deviceScreen {
+  width: 100%;
+  min-height: 92px;
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(56,189,248,0.18), rgba(167,139,250,0.08)),
+    rgba(2, 12, 18, 0.95);
+  border: 1px solid rgba(56,189,248,0.18);
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 8px;
+}
+
+.deviceBrand,
+.deviceLabel,
+.deviceType,
+.miniLabel,
+.upcomingIndex {
+  font-family: var(--mono);
+}
+
+.deviceBrand {
+  color: var(--sky);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+}
+
+.deviceValue {
+  color: var(--t1);
+  font-size: 28px;
+  line-height: 1;
+  font-weight: 900;
+  letter-spacing: -0.06em;
+}
+
+.devicePorts {
+  display: flex;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.devicePorts span {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+.deviceLabel,
+.deviceType,
+.miniLabel {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--t3);
+}
+
+.deviceInfo {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+
+.deviceName,
+.panelTitle,
+.upcomingTitle {
+  margin: 0;
+  color: var(--t1);
+  letter-spacing: -0.04em;
+}
+
+.deviceName {
+  font-size: 30px;
+  font-weight: 850;
+}
+
+.deviceSummary,
+.upcomingDetail,
+.audienceCopy {
+  margin: 0;
+  color: var(--t2);
+  line-height: 1.7;
+}
+
+.specList,
+.techGrid,
+.upcomingList {
+  display: grid;
+  gap: 10px;
+}
+
+.specList {
+  margin-top: 8px;
+}
+
+.specItem,
+.techRow,
+.upcomingCard {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: flex-start;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: rgba(255,255,255,0.035);
+  border: 1px solid rgba(255,255,255,0.07);
+}
+
+.specItem span,
+.techRow span {
+  color: var(--t3);
+  font-size: 11px;
+  font-family: var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.specItem strong,
+.techRow strong {
+  color: var(--t1);
+  font-size: 13px;
+  text-align: right;
+}
+
+.techPanel {
+  margin-top: 20px;
+  padding: 22px;
+  border-radius: 24px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01)),
+    rgba(9, 11, 16, 0.98);
+}
+
+.panelTitle {
+  margin-top: 8px;
+  font-size: 26px;
+  font-weight: 850;
+}
+
+.techGrid {
+  margin-top: 18px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.altSection {
+  background: var(--bg2);
+}
+
+.audienceGrid {
+  margin-top: 28px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.audienceCard {
+  padding: 22px;
+  border-radius: 22px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.025), rgba(255,255,255,0.01)),
+    rgba(10, 12, 17, 0.98);
+}
+
+.audienceTitle {
+  color: var(--t1);
+  font-size: 24px;
+  font-weight: 820;
+  letter-spacing: -0.05em;
+  margin-bottom: 12px;
+}
+
+.audiencePoints {
+  margin-top: 18px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pointTag {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 12px;
+  border-radius: 999px;
+  font: 700 10px/1 var(--mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--t1);
+  border: 1px solid rgba(56,189,248,0.14);
+  background: rgba(56,189,248,0.06);
+}
+
+.upcomingList {
+  margin-top: 28px;
+}
+
+.upcomingCard {
+  justify-content: flex-start;
+  align-items: center;
+  gap: 16px;
+}
+
+.upcomingIndex {
+  min-width: 46px;
+  height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(56,189,248,0.08);
+  border: 1px solid rgba(56,189,248,0.18);
+  color: var(--sky);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.upcomingTitle {
+  font-size: 22px;
+  font-weight: 820;
+  margin-bottom: 6px;
+}
+
+@media (max-width: 1100px) {
+  .deviceCard {
+    grid-template-columns: 1fr;
+  }
+
+  .techGrid,
+  .audienceGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .hero,
+  .section {
+    padding: 68px 4% 48px;
+  }
+
+  .sectionNav {
+    top: 68px;
+  }
+
+  .specItem,
+  .techRow,
+  .upcomingCard {
+    flex-direction: column;
+  }
+
+  .specItem strong,
+  .techRow strong {
+    text-align: left;
+  }
+}

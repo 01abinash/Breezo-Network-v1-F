@@ -18,9 +18,9 @@ export default function SignupPage() {
   const navigate = useNavigate()
   const session = readTokenSession()
   const [form, setForm] = useState({
-    fullName: 'Aether Node Owner',
-    email: 'owner@breezo.io',
-    password: 'SecurePass123!',
+    fullName: '',
+    email: '',
+    password: '',
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')

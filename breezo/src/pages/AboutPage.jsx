@@ -18,10 +18,10 @@ const SOLUTION_POINTS = [
 ]
 
 const TEAM = [
-  { initials: 'AK', name: 'Aryan Khatri',   role: 'Founder & Hardware Lead',   bg: '#0EA5E9' },
-  { initials: 'SM', name: 'Sita Maharjan',  role: 'Software & Data Pipeline',  bg: '#2DD4BF' },
-  { initials: 'RB', name: 'Rohan Bajracharya', role: 'Blockchain & Tokenomics', bg: '#A78BFA' },
-  { initials: 'PP', name: 'Priya Pandey',   role: 'Community & Partnerships',  bg: '#FCD34D' },
+  { initials: 'AY', name: 'Abinash Yadav',   role: 'Founder, Hardware Lead & marketing',   bg: '#0EA5E9' },
+  { initials: 'LM', name: 'Looneva Maharjan',  role: 'Developer',  bg: '#2DD4BF' },
+  // { initials: 'RB', name: 'Rohan Bajracharya', role: 'Blockchain & Tokenomics', bg: '#A78BFA' },
+  // { initials: 'PP', name: 'Priya Pandey',   role: 'Community & Partnerships',  bg: '#FCD34D' },
 ]
 
 function RevealSection({ children }) {
@@ -53,7 +53,7 @@ export default function AboutPage() {
             infrastructure layer that South Asia has been missing.
           </p>
           <div className={styles.heroBadges}>
-            <SolanaTag />
+            {/* <SolanaTag /> */}
             <span className={styles.heroBadge}>🇳🇵 Built in Nepal</span>
             <span className={styles.heroBadge}>🌏 For South Asia</span>
           </div>

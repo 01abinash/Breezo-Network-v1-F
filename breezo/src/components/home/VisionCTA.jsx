@@ -8,7 +8,7 @@ const VISION_CARDS = [
     icon: 'Grid',
     title: 'Real devices in real cities',
     desc: 'BREEZO grows city by city through live AQI hardware deployments, not generic public feeds.',
-    highlight: false,
+    highlight: true,
   },
   {
     icon: 'Data',
@@ -20,7 +20,7 @@ const VISION_CARDS = [
     icon: 'Token',
     title: 'Contributors are directly rewarded',
     desc: '$BREEZO tokens reward every valid, high-quality device contribution.',
-    highlight: false,
+    highlight: true,
   },
 ]
 
@@ -80,10 +80,10 @@ export function HomeCTA() {
               View Live Data
             </button>
             <button className={styles.btnGhost} onClick={() => navigate('/tokenization')}>
-              Operator Login {'->'}
+               Login {'->'}
             </button>
           </div>
-          <div className={styles.solanaRow}><SolanaTag /></div>
+          {/* <div className={styles.solanaRow}><SolanaTag /></div> */}
         </div>
       </RevealWrapper>
     </section>

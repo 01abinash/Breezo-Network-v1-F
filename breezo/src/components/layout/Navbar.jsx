@@ -50,6 +50,7 @@ export default function Navbar() {
   }, [])
 
   const isActive = (path) => location.pathname === path
+  const profileLabel = String(session?.ownerName || session?.ownerEmail || 'Profile').trim()
 
   function handleLogout() {
     clearTokenSession()
@@ -68,7 +69,7 @@ export default function Navbar() {
         <li><Link to="/"          className={isActive('/')          ? styles.active : ''}>Home</Link></li>
         <li><Link to="/dashboard" className={isActive('/dashboard') ? styles.active : ''}>Dashboard</Link></li>
         <li><Link to="/map"       className={isActive('/map')       ? styles.active : ''}>Map</Link></li>
-        <li><Link to="/network"   className={isActive('/network')   ? styles.active : ''}>Network</Link></li>
+        <li><Link to="/product"   className={isActive('/product') || isActive('/network') ? styles.active : ''}>Product</Link></li>
         <li><Link to="/about"     className={isActive('/about')     ? styles.active : ''}>About</Link></li>
       </ul>
 
@@ -82,14 +83,14 @@ export default function Navbar() {
               aria-expanded={profileOpen}
               type="button"
             >
-              <span className={styles.profileName}>{session.ownerName}</span>
+              <span className={styles.profileName}>{profileLabel}</span>
               <span className={`${styles.chevron} ${profileOpen ? styles.chevronOpen : ''}`}>▾</span>
             </button>
 
             {profileOpen && (
               <div className={styles.dropdown} role="menu">
                 <div className={styles.dropdownMeta}>
-                  <span className={styles.dropdownName}>{session.ownerName}</span>
+                  <span className={styles.dropdownName}>{profileLabel}</span>
                   <span className={styles.dropdownSub}>{session.ownerEmail}</span>
                 </div>
                 <button className={styles.dropdownItem} onClick={() => navigate('/tokenization')} type="button" role="menuitem">

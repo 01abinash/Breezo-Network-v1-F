@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import {
-  clearTokenSession,
   readTokenSession,
   TOKEN_SESSION_EVENT,
   TOKEN_SESSION_KEY,
 } from '../lib/tokenization'
-import { getOperatorDashboard } from '../lib/tokenizationApi'
+import {
+  connectOperatorWallet,
+  disconnectOperatorWallet,
+  getOperatorDashboard,
+} from '../lib/tokenizationApi'
 import styles from './TokenizationPage.module.css'
 
 const TIMING = {
@@ -29,6 +32,14 @@ function formatLastSeen(value) {
     hour: 'numeric',
     minute: '2-digit',
   })
+}
+
+function formatWalletLabel(value) {
+  const wallet = String(value || '').trim()
+  if (!wallet) return 'Not connected'
+  if (wallet.includes('...')) return wallet
+  if (wallet.length <= 14) return wallet
+  return `${wallet.slice(0, 6)}...${wallet.slice(-6)}`
 }
 
 function MetricCard({ label, value, note, tone = 'var(--sky)' }) {
@@ -55,6 +66,7 @@ export default function TokenizationPage() {
   const [dashboard, setDashboard] = useState(null)
   const [loading, setLoading] = useState(true)
   const [claiming, setClaiming] = useState(false)
+  const [walletBusy, setWalletBusy] = useState(false)
   const [claimMessage, setClaimMessage] = useState('')
   const [stage, setStage] = useState(0)
 
@@ -74,7 +86,6 @@ export default function TokenizationPage() {
         const nextDashboard = await getOperatorDashboard(stored)
         setDashboard(nextDashboard)
       } catch {
-        clearTokenSession()
         setDashboard(null)
       } finally {
         setLoading(false)
@@ -153,6 +164,9 @@ export default function TokenizationPage() {
   }
 
   const node = dashboard.data[0]
+  const displayName = String(session?.ownerName || dashboard.owner.name || 'Profile').trim()
+  const walletAddress = String(dashboard.owner.walletAddress || '').trim()
+  const walletConnected = Boolean(walletAddress)
 
   function handleClaimReward() {
     setClaimMessage('')
@@ -164,30 +178,65 @@ export default function TokenizationPage() {
     }, 900)
   }
 
+  async function handleWalletToggle() {
+    if (!session) return
+
+    setClaimMessage('')
+    setWalletBusy(true)
+
+    try {
+      const nextDashboard = walletConnected
+        ? await disconnectOperatorWallet(session)
+        : await connectOperatorWallet(session)
+
+      setDashboard(nextDashboard)
+      setClaimMessage(
+        walletConnected
+          ? 'Wallet disconnected from this operator profile.'
+          : `Wallet connected: ${formatWalletLabel(nextDashboard.owner.walletAddress)}.`
+      )
+    } finally {
+      setWalletBusy(false)
+    }
+  }
+
   return (
     <div className={styles.page}>
-      <section className={`${styles.heroGrid} ${styles.revealBase} ${stage >= 1 ? styles.revealVisible : ''}`}>
-        <div className={styles.heroCard}>
-          <div className={styles.heroTopline}>
+      <section className={`${styles.commandDeck} ${styles.revealBase} ${stage >= 1 ? styles.revealVisible : ''}`}>
+        <div className={styles.identityPanel}>
+          <div className={styles.panelTopline}>
             <span className={styles.kicker}>Private node cockpit</span>
             <span className={styles.levelBadge} style={{ color: statusTone(node.aqiLevel) }}>
               {node.aqiLevel}
             </span>
           </div>
 
-          <div className={styles.heroBody}>
-            <div>
-              <h1 className={styles.title}>{dashboard.owner.name}</h1>
-              <p className={styles.subtitle}>
-                Premium operator view for your personal AQI device, BMP pressure feed, sync health,
-                and reward state.
-              </p>
-            </div>
+          <h1 className={styles.title}>{displayName}</h1>
+          <p className={styles.subtitle}>
+            Personal command surface for your AQI device, BMP pressure telemetry, sync state, and
+            reward lifecycle.
+          </p>
 
-            <div className={styles.heroActions}>
-              <button className={styles.primaryBtn} onClick={handleClaimReward} type="button" disabled={claiming}>
-                {claiming ? 'Claiming...' : 'Claim Reward'}
-              </button>
+          <div className={styles.snapshotGrid}>
+            <div className={styles.snapshotCard}>
+              <span>AQI signal</span>
+              <strong style={{ color: statusTone(node.aqiLevel) }}>{node.aqi}</strong>
+              <p>{node.aqiLevel.toLowerCase()} live output from your node.</p>
+            </div>
+            <div className={styles.snapshotCard}>
+              <span>Reward stream</span>
+              <strong>{node.reward.toFixed(2)}</strong>
+              <p>BREEZO ready in the current cycle.</p>
+            </div>
+            <div className={styles.snapshotCard}>
+              <span>Sync state</span>
+              <strong>{node.syncing ? 'Syncing' : 'Synced'}</strong>
+              <p>Latest device transmission condition.</p>
+            </div>
+            <div className={styles.snapshotCard}>
+              <span>Wallet route</span>
+              <strong>{walletConnected ? formatWalletLabel(walletAddress) : 'Not connected'}</strong>
+              <p>{walletConnected ? 'Reward destination bound.' : 'Connect before claims go live.'}</p>
             </div>
           </div>
 
@@ -203,32 +252,48 @@ export default function TokenizationPage() {
           {claimMessage && <div className={styles.successBox}>{claimMessage}</div>}
         </div>
 
-        <aside className={styles.sideCard}>
-          <div className={styles.sectionLabel}>Node state</div>
-          <div className={styles.sideTitle}>Live operator summary</div>
+        <aside className={styles.actionPanel}>
+          <div className={styles.sectionLabel}>Operator actions</div>
+          <div className={styles.panelTitle}>Wallet and claims</div>
 
-          <div className={styles.sideStack}>
-            <div className={styles.sideStat}>
-              <span>Node ID</span>
+          <div className={styles.actionGroup}>
+            <button
+              className={styles.secondaryBtn}
+              onClick={handleWalletToggle}
+              type="button"
+              disabled={walletBusy}
+            >
+              {walletBusy
+                ? (walletConnected ? 'Disconnecting...' : 'Connecting...')
+                : (walletConnected ? 'Disconnect Wallet' : 'Connect Wallet')}
+            </button>
+            <button className={styles.primaryBtn} onClick={handleClaimReward} type="button" disabled={claiming}>
+              {claiming ? 'Claiming...' : 'Claim Reward'}
+            </button>
+          </div>
+
+          <div className={styles.actionStack}>
+            <div className={styles.actionStat}>
+              <span>Wallet</span>
+              <strong>{walletConnected ? formatWalletLabel(walletAddress) : 'Disconnected'}</strong>
+            </div>
+            <div className={styles.actionStat}>
+              <span>Node</span>
               <strong>{node.nodeId}</strong>
             </div>
-            <div className={styles.sideStat}>
-              <span>Syncing</span>
-              <strong>{node.syncing ? 'Syncing' : 'Synced'}</strong>
-            </div>
-            <div className={styles.sideStat}>
+            <div className={styles.actionStat}>
               <span>Reward</span>
               <strong>{node.reward.toFixed(2)} BREEZO</strong>
             </div>
-            <div className={styles.sideStat}>
-              <span>AQI Level</span>
+            <div className={styles.actionStat}>
+              <span>AQI level</span>
               <strong style={{ color: statusTone(node.aqiLevel) }}>{node.aqiLevel}</strong>
             </div>
           </div>
         </aside>
       </section>
 
-      <section className={`${styles.statusStrip} ${styles.revealBase} ${stage >= 2 ? styles.revealVisible : ''}`}>
+      <section className={`${styles.statusBand} ${styles.revealBase} ${stage >= 2 ? styles.revealVisible : ''}`}>
         <article className={styles.stripCard}>
           <span className={styles.stripLabel}>AQI Status</span>
           <strong style={{ color: statusTone(node.aqiLevel) }}>{node.aqiLevel}</strong>
@@ -245,25 +310,30 @@ export default function TokenizationPage() {
           <p>Live device state for the latest telemetry cycle.</p>
         </article>
         <article className={styles.stripCard}>
+          <span className={styles.stripLabel}>Wallet</span>
+          <strong>{walletConnected ? 'Connected' : 'Disconnected'}</strong>
+          <p>{walletConnected ? formatWalletLabel(walletAddress) : 'Connect a wallet to prepare reward claiming.'}</p>
+        </article>
+        <article className={styles.stripCard}>
           <span className={styles.stripLabel}>Claim State</span>
           <strong>{claiming ? 'Processing' : 'Ready'}</strong>
           <p>Use the claim action when rewards are available.</p>
         </article>
       </section>
 
-      <section className={`${styles.metricsGrid} ${styles.revealBase} ${stage >= 3 ? styles.revealVisible : ''}`}>
+      {/* <section className={`${styles.metricsGrid} ${styles.revealBase} ${stage >= 3 ? styles.revealVisible : ''}`}>
         <MetricCard label="AQI" value={node.aqi} note="Current air quality score from your node." tone={statusTone(node.aqiLevel)} />
         <MetricCard label="PM2.5" value={node.pm25.toFixed(1)} note="Fine particulate output from your device." tone="var(--sky)" />
         <MetricCard label="BMP" value={node.bmp.toFixed(1)} note="Pressure reading sourced from the BMP sensor." tone="var(--purple)" />
         <MetricCard label="Reward" value={node.reward.toFixed(2)} note="Current reward allocation for this active cycle." tone="var(--teal)" />
-      </section>
+      </section> */}
 
-      <section className={`${styles.dashboardGrid} ${styles.revealBase} ${stage >= 4 ? styles.revealVisible : ''}`}>
-        <article className={styles.panel}>
+      <section className={`${styles.contentGrid} ${styles.revealBase} ${stage >= 4 ? styles.revealVisible : ''}`}>
+        <article className={styles.telemetryPanel}>
           <div className={styles.panelHeader}>
             <div>
               <div className={styles.sectionLabel}>Telemetry</div>
-              <div className={styles.panelTitle}>Personal dashboard fields</div>
+              <div className={styles.panelTitle}>Sensor field grid</div>
             </div>
           </div>
 
@@ -319,7 +389,7 @@ export default function TokenizationPage() {
           </div>
         </article>
 
-        <article className={styles.panel}>
+        <article className={styles.contextPanel}>
           <div className={styles.panelHeader}>
             <div>
               <div className={styles.sectionLabel}>Context</div>
@@ -330,13 +400,18 @@ export default function TokenizationPage() {
           <div className={styles.contextStack}>
             <div className={styles.contextCard}>
               <span>Account owner</span>
-              <strong>{dashboard.owner.name}</strong>
+              <strong>{displayName}</strong>
               <p>Private identity linked to this node telemetry stream.</p>
             </div>
             <div className={styles.contextCard}>
               <span>Email</span>
               <strong>{dashboard.owner.email}</strong>
               <p>Primary login for the premium operator surface.</p>
+            </div>
+            <div className={styles.contextCard}>
+              <span>Wallet</span>
+              <strong>{walletConnected ? formatWalletLabel(walletAddress) : 'Not connected'}</strong>
+              <p>Use the wallet action in the hero area to connect your payout address.</p>
             </div>
             <div className={styles.contextCard}>
               <span>Claim state</span>

@@ -2,9 +2,10 @@ export const TOKENIZATION_DEMO_STORAGE_KEY = 'breezo-tokenization-demo-data'
 import { getActiveDeviceCityKeys as getDeviceCityKeys } from './deviceDemo'
 
 const DEFAULT_ACCOUNT = {
-  fullName: 'Aether Node Owner',
+  fullName: '',
   email: 'owner@breezo.io',
   password: 'SecurePass123!',
+  walletAddress: '',
   dashboard: {
     success: true,
     data: [
@@ -26,9 +27,26 @@ const DEFAULT_ACCOUNT = {
 }
 
 const DEFAULT_NODE = DEFAULT_ACCOUNT.dashboard.data[0]
+const LEGACY_PLACEHOLDER_NAMES = new Set(['Aether Node Owner', 'Device 1'])
 
 function clone(data) {
   return JSON.parse(JSON.stringify(data))
+}
+
+function fallbackDisplayName(account) {
+  const explicitName = String(account.fullName || '').trim()
+  if (explicitName) return explicitName
+
+  const email = String(account.email || '').trim().toLowerCase()
+  if (!email) return 'Profile'
+
+  return email.split('@')[0]
+}
+
+function buildMockWalletAddress(email) {
+  const seed = String(email || 'breezo').replace(/[^a-z0-9]/gi, '').toUpperCase() || 'BREEZO'
+  const padded = `${seed}SOLNODE8452X9QW7K`
+  return `${padded.slice(0, 8)}...${padded.slice(-8)}`
 }
 
 export function getActiveDeviceCityKeys() {
@@ -36,9 +54,14 @@ export function getActiveDeviceCityKeys() {
 }
 
 function shapeAccount(raw = {}) {
+  const normalizedFullName = LEGACY_PLACEHOLDER_NAMES.has(String(raw.fullName || '').trim())
+    ? ''
+    : raw.fullName
+
   return {
     ...clone(DEFAULT_ACCOUNT),
     ...raw,
+    fullName: normalizedFullName ?? clone(DEFAULT_ACCOUNT).fullName,
     dashboard: {
       ...clone(DEFAULT_ACCOUNT.dashboard),
       ...(raw.dashboard ?? {}),
@@ -78,8 +101,9 @@ function writeStoredAccount(account) {
 function toDashboardPayload(account) {
   return {
     owner: {
-      name: account.fullName,
+      name: fallbackDisplayName(account),
       email: account.email,
+      walletAddress: account.walletAddress || '',
     },
     success: account.dashboard.success,
     data: clone(account.dashboard.data),
@@ -139,5 +163,55 @@ export async function getOperatorDashboard(session) {
     throw new Error('Missing operator account')
   }
 
+  const sessionName = String(session.ownerName || '').trim()
+  const accountName = String(current.fullName || '').trim()
+
+  if (sessionName && sessionName !== accountName) {
+    const syncedAccount = shapeAccount({
+      ...current,
+      fullName: sessionName,
+    })
+    writeStoredAccount(syncedAccount)
+    return toDashboardPayload(syncedAccount)
+  }
+
   return toDashboardPayload(current)
+}
+
+export async function connectOperatorWallet(session) {
+  if (!session?.ownerEmail) {
+    throw new Error('Missing session')
+  }
+
+  const current = readStoredAccount()
+  if (current.email.toLowerCase() !== String(session.ownerEmail).toLowerCase()) {
+    throw new Error('Missing operator account')
+  }
+
+  const nextAccount = shapeAccount({
+    ...current,
+    walletAddress: current.walletAddress || buildMockWalletAddress(current.email),
+  })
+
+  writeStoredAccount(nextAccount)
+  return toDashboardPayload(nextAccount)
+}
+
+export async function disconnectOperatorWallet(session) {
+  if (!session?.ownerEmail) {
+    throw new Error('Missing session')
+  }
+
+  const current = readStoredAccount()
+  if (current.email.toLowerCase() !== String(session.ownerEmail).toLowerCase()) {
+    throw new Error('Missing operator account')
+  }
+
+  const nextAccount = shapeAccount({
+    ...current,
+    walletAddress: '',
+  })
+
+  writeStoredAccount(nextAccount)
+  return toDashboardPayload(nextAccount)
 }

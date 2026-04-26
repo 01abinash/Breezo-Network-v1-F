@@ -154,12 +154,13 @@
 /* Team */
 .teamGrid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 16px;
   margin-top: 8px;
 }
 
 .teamCard {
+  height: 200px;
   background: var(--bg2);
   border: 1px solid var(--border);
   border-radius: 16px;

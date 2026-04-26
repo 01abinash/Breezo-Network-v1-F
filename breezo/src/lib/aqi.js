@@ -112,7 +112,6 @@ export function getAQIInfo(aqi) {
 // ─── WHO Guideline limits (annual mean, μg/m³) ────────────────────────────────
 export const WHO_LIMITS = {
   pm25: 5,
-  pm10: 15,
   no2:  10,
   so2:  40,
   o3:   100,

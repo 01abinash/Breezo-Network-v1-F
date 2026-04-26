@@ -3,7 +3,7 @@ import Layout from './components/layout/Layout'
 import HomePage from './pages/HomePage'
 import DashboardPage from './pages/DashboardPage'
 import MapPage from './pages/MapPage'
-import NetworkPage from './pages/NetworkPage'
+import ProductPage from './pages/ProductPage'
 import AboutPage from './pages/AboutPage'
 import TokenizationPage from './pages/TokenizationPage'
 import LoginPage from './pages/LoginPage'
@@ -19,7 +19,8 @@ export default function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/tokenization" element={<TokenizationPage />} />
-        <Route path="/network" element={<NetworkPage />} />
+        <Route path="/product" element={<ProductPage />} />
+        <Route path="/network" element={<ProductPage />} />
         <Route path="/about" element={<AboutPage />} />
       </Routes>
     </Layout>

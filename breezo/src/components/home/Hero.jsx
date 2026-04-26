@@ -159,7 +159,7 @@ export default function Hero() {
             Live Dashboard
           </button>
           <button className={styles.btnGhost} onClick={() => navigate('/tokenization')}>
-            Operator Login {'->'}
+            Login {'->'}
           </button>
         </div>
       </div>
@@ -168,7 +168,7 @@ export default function Hero() {
         <div className={styles.aqiCard}>
           <div className={styles.aqiCardHeader}>
             <span className={styles.aqiCardTitle}>BREEZO Device Network · Live</span>
-            <LivePill />
+            {/* <LivePill /> */}
           </div>
 
           <div className={styles.cityGrid}>

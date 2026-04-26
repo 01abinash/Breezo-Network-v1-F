@@ -171,7 +171,7 @@ export default function DepinSection() {
         </div>
       </RevealWrapper>
 
-      <RevealWrapper visible={visible} className={styles.bottomGrid}>
+      {/* <RevealWrapper visible={visible} className={styles.bottomGrid}>
         <div className={styles.bottomGrid}>
           <TokenOrbit />
 
@@ -194,7 +194,7 @@ export default function DepinSection() {
             </div>
           </div>
         </div>
-      </RevealWrapper>
+      </RevealWrapper> */}
     </section>
   )
 }
