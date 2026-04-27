@@ -69,8 +69,10 @@ export default function Navbar() {
         <li><Link to="/"          className={isActive('/')          ? styles.active : ''}>Home</Link></li>
         <li><Link to="/dashboard" className={isActive('/dashboard') ? styles.active : ''}>Dashboard</Link></li>
         <li><Link to="/map"       className={isActive('/map')       ? styles.active : ''}>Map</Link></li>
+        <li><Link to="/docs"      className={isActive('/docs')      ? styles.active : ''}>Docs</Link></li>
         <li><Link to="/product"   className={isActive('/product') || isActive('/network') ? styles.active : ''}>Product</Link></li>
         <li><Link to="/about"     className={isActive('/about')     ? styles.active : ''}>About</Link></li>
+        <li><Link to="/contact"   className={isActive('/contact')   ? styles.active : ''}>Contact Us</Link></li>
       </ul>
 
       <div className={styles.right}>

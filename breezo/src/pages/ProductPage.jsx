@@ -67,17 +67,17 @@ const UPCOMING_ITEMS = [
     title: 'Live node fleet expansion',
     detail: 'More deployed AQI devices across dense neighborhoods, institutions, and public roads.',
   },
+  // {
+  //   title: 'Government-grade reporting views',
+  //   detail: 'Policy-oriented dashboards with trends, hotspot comparison, and intervention visibility.',
+  // },
+  // {
+  //   title: 'Business environment modules',
+  //   detail: 'Operational AQI reporting for campuses, offices, and facilities monitoring.',
+  // },
   {
-    title: 'Government-grade reporting views',
-    detail: 'Policy-oriented dashboards with trends, hotspot comparison, and intervention visibility.',
-  },
-  {
-    title: 'Business environment modules',
-    detail: 'Operational AQI reporting for campuses, offices, and facilities monitoring.',
-  },
-  {
-    title: 'Operator tokenization layer',
-    detail: 'Wallet-linked node rewards, sync validation, and private operator dashboards.',
+    title: 'AI 7 days AQI prediction',
+    detail: 'Short-term AQI forecasting to help users anticipate and plan for air quality changes in their area.',
   },
 ]
 

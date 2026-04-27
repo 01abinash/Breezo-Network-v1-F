@@ -51,6 +51,13 @@ function InfoCard({ label, value, note }) {
 }
 
 export default function MetricsGrid({ data }) {
+  const gpsNote =
+    data?.gps?.source === 'Network average'
+      ? 'Average position across the active Breezo device network.'
+      : data?.gps?.source === 'City profile'
+        ? 'Using fallback city coordinates until live GPS is connected.'
+        : 'Live coordinates from the GPS module.'
+
   return (
     <div className={styles.panel}>
       <div className={styles.panelHeader}>Device Telemetry</div>
@@ -61,7 +68,7 @@ export default function MetricsGrid({ data }) {
         <InfoCard
           label="GPS"
           value={formatGps(data?.gps)}
-          note={data?.gps?.source === 'City profile' ? 'Using fallback city coordinates until live GPS is connected.' : 'Live coordinates from the GPS module.'}
+          note={gpsNote}
         />
       </div>
     </div>

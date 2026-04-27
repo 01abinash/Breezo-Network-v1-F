@@ -5,8 +5,10 @@ import DashboardPage from './pages/DashboardPage'
 import MapPage from './pages/MapPage'
 import ProductPage from './pages/ProductPage'
 import AboutPage from './pages/AboutPage'
+import ContactPage from './pages/ContactPage'
 import TokenizationPage from './pages/TokenizationPage'
 import ApiKeysPage from './pages/ApiKeysPage'
+import ApiDocsPage from './pages/ApiDocsPage'
 import LoginPage from './pages/LoginPage'
 import SignupPage from './pages/SignupPage'
 
@@ -21,9 +23,11 @@ export default function App() {
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/tokenization" element={<TokenizationPage />} />
         <Route path="/api-keys" element={<ApiKeysPage />} />
+        <Route path="/docs" element={<ApiDocsPage />} />
         <Route path="/product" element={<ProductPage />} />
         <Route path="/network" element={<ProductPage />} />
         <Route path="/about" element={<AboutPage />} />
+        <Route path="/contact" element={<ContactPage />} />
       </Routes>
     </Layout>
   )

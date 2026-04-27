@@ -1,0 +1,256 @@
+.page {
+  padding: 88px 5% 56px;
+  max-width: 1380px;
+  margin: 0 auto;
+  display: grid;
+  gap: 18px;
+}
+
+.hero,
+.channelsCard,
+.topicsCard,
+.formCard {
+  border-radius: 28px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01)),
+    rgba(10, 12, 17, 0.98);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.24);
+}
+
+.hero {
+  padding: 34px 30px;
+  background:
+    radial-gradient(circle at top right, rgba(56,189,248,0.12), transparent 28%),
+    radial-gradient(circle at bottom left, rgba(167,139,250,0.08), transparent 22%),
+    linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01)),
+    rgba(10, 12, 17, 0.98);
+}
+
+.heroLabel,
+.sectionKicker,
+.channelLabel,
+.topicIndex {
+  font: 700 10px/1.2 var(--mono);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.heroLabel,
+.sectionKicker,
+.channelLabel {
+  color: var(--t3);
+}
+
+.heroTitle,
+.sectionTitle {
+  color: var(--t1);
+  letter-spacing: -0.06em;
+}
+
+.heroTitle {
+  margin-top: 14px;
+  font-size: clamp(34px, 5vw, 62px);
+  line-height: 0.95;
+  font-weight: 900;
+  max-width: 760px;
+}
+
+.heroDesc {
+  margin-top: 16px;
+  max-width: 720px;
+  color: var(--t2);
+  font-size: 15px;
+  line-height: 1.75;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(340px, 0.95fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.channelsCard,
+.topicsCard,
+.formCard {
+  padding: 26px;
+}
+
+.rightColumn {
+  display: grid;
+  gap: 18px;
+}
+
+.sectionTitle {
+  margin-top: 8px;
+  font-size: 28px;
+  font-weight: 850;
+  line-height: 1.04;
+}
+
+.channelList,
+.topicList {
+  margin-top: 18px;
+  display: grid;
+  gap: 12px;
+}
+
+.form {
+  margin-top: 18px;
+  display: grid;
+  gap: 12px;
+}
+
+.field {
+  display: grid;
+  gap: 8px;
+}
+
+.field span {
+  color: var(--t3);
+  font: 700 10px/1.2 var(--mono);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.input,
+.textarea {
+  width: 100%;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.03);
+  color: var(--t1);
+  padding: 14px 16px;
+  font-size: 14px;
+  font-family: var(--font);
+}
+
+.textarea {
+  resize: vertical;
+  min-height: 132px;
+}
+
+.input::placeholder,
+.textarea::placeholder {
+  color: var(--t3);
+}
+
+.input:focus-visible,
+.textarea:focus-visible,
+.submitBtn:focus-visible {
+  outline: 2px solid var(--sky);
+  outline-offset: 3px;
+}
+
+.submitBtn {
+  min-height: 46px;
+  width: fit-content;
+  padding: 0 18px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(56,189,248,1), rgba(14,165,233,0.94));
+  color: #04131a;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.submitBtn:hover {
+  transform: translateY(-1px);
+}
+
+.successBox {
+  border-radius: 16px;
+  border: 1px solid rgba(45,212,191,0.24);
+  background: rgba(45,212,191,0.08);
+  color: var(--teal);
+  padding: 12px 14px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.channelItem,
+.topicItem {
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.03);
+}
+
+.channelItem {
+  padding: 18px;
+  display: block;
+  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+.channelItem:hover {
+  transform: translateY(-2px);
+  border-color: rgba(56,189,248,0.2);
+  background: rgba(56,189,248,0.05);
+}
+
+.channelValue {
+  display: block;
+  margin-top: 10px;
+  color: var(--t1);
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+}
+
+.channelNote {
+  margin-top: 8px;
+  color: var(--t2);
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.topicItem {
+  min-height: 74px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.topicIndex {
+  min-width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  color: var(--sky);
+  background: rgba(56,189,248,0.08);
+  border: 1px solid rgba(56,189,248,0.16);
+}
+
+.topicText {
+  color: var(--t1);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+@media (max-width: 980px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .page {
+    padding: 74px 4% 32px;
+  }
+
+  .hero,
+  .channelsCard,
+  .topicsCard,
+  .formCard {
+    padding: 20px;
+    border-radius: 22px;
+  }
+
+  .heroTitle {
+    font-size: clamp(32px, 10vw, 42px);
+  }
+}

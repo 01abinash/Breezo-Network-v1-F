@@ -15,8 +15,10 @@ export default function Footer() {
           <ul>
             <li><Link to="/dashboard">Live Dashboard</Link></li>
             <li><Link to="/map">Map</Link></li>
+            <li><Link to="/docs">API Docs</Link></li>
             <li><Link to="/product">AQI Devices</Link></li>
             <li><Link to="/about">About</Link></li>
+            <li><Link to="/contact">Contact Us</Link></li>
           </ul>
         </div>
 
@@ -36,7 +38,9 @@ export default function Footer() {
             <li><Link to="/">Home</Link></li>
             <li><Link to="/dashboard">AQI Dashboard</Link></li>
             <li><Link to="/map">Network Map</Link></li>
+            <li><Link to="/docs">Developer Docs</Link></li>
             <li><Link to="/product">Product</Link></li>
+            <li><a href="https://twitter.com/breezonetwork" target="_blank" rel="noreferrer">Twitter / X</a></li>
           </ul>
         </div>
       </div>

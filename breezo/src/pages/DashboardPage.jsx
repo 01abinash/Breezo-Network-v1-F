@@ -1,9 +1,8 @@
 import { useState } from 'react'
-import { CITIES } from '../lib/aqi'
+import { getAQIInfo } from '../lib/aqi'
 import { getActiveDeviceCityKeys } from '../lib/tokenizationApi'
-import { useAirQuality } from '../hooks/useAirQuality'
+import { useAirQuality, useMultiCityAQI } from '../hooks/useAirQuality'
 import { LivePill } from '../components/ui/UI'
-import CitySelector from '../components/dashboard/CitySelector'
 import AQIHeroCard from '../components/dashboard/AQIHeroCard'
 import MetricsGrid from '../components/dashboard/MetricsGrid'
 import TrendChart from '../components/dashboard/TrendChart'
@@ -18,10 +17,50 @@ export default function DashboardPage() {
   const activeCities = getActiveDeviceCityKeys()
   const [activeCity, setActiveCity] = useState(activeCities[0] ?? 'ktm')
   const { data, loading, error, refetch } = useAirQuality(activeCity)
+  const networkCityData = useMultiCityAQI(activeCities)
 
   const now = new Date()
   const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
   const dateStr = now.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })
+  const networkEntries = activeCities
+    .map((key) => networkCityData[key])
+    .filter(Boolean)
+
+  const averageNetworkData = networkEntries.length
+    ? (() => {
+        const average = (key) =>
+          networkEntries.reduce((sum, item) => sum + (item[key] ?? 0), 0) / networkEntries.length
+
+        const avgAqi = Math.round(
+          average('aqi')
+        )
+        const avgPm25 = average('pm25')
+        const avgTemperature = average('temperature')
+        const avgHumidity = average('humidity')
+        const avgPressure = average('pressure')
+        const avgMq135 = average('mq135')
+        const avgLat =
+          networkEntries.reduce((sum, item) => sum + (item.gps?.lat ?? 0), 0) / networkEntries.length
+        const avgLon =
+          networkEntries.reduce((sum, item) => sum + (item.gps?.lon ?? 0), 0) / networkEntries.length
+
+        return {
+          aqi: avgAqi,
+          pm25: avgPm25,
+          temperature: avgTemperature,
+          humidity: avgHumidity,
+          pressure: avgPressure,
+          mq135: avgMq135,
+          gps: {
+            lat: avgLat,
+            lon: avgLon,
+            source: 'Network average',
+          },
+          sourceLabel: `Average across ${networkEntries.length} Breezo devices`,
+          info: getAQIInfo(avgAqi),
+        }
+      })()
+    : data
 
   return (
     <div className={styles.page}>
@@ -45,11 +84,9 @@ export default function DashboardPage() {
         </button>
       </div>
 
-      <CitySelector activeCity={activeCity} onChange={setActiveCity} />
-
       <div className={styles.mainGrid}>
-        <AQIHeroCard cityName={CITIES[activeCity].name} data={data} loading={loading && !data} />
-        <MetricsGrid data={data} />
+        <AQIHeroCard cityName="BREEZO Network Average" data={averageNetworkData} loading={loading && !averageNetworkData} />
+        <MetricsGrid data={averageNetworkData} />
       </div>
 
       <div className={styles.quickRef}>
