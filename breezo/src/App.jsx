@@ -11,6 +11,7 @@ import ApiKeysPage from './pages/ApiKeysPage'
 import ApiDocsPage from './pages/ApiDocsPage'
 import LoginPage from './pages/LoginPage'
 import SignupPage from './pages/SignupPage'
+import IoTSimulator from './pages/IOTSimulator'
 
 export default function App() {
   return (
@@ -28,6 +29,7 @@ export default function App() {
         <Route path="/network" element={<ProductPage />} />
         <Route path="/about" element={<AboutPage />} />
         <Route path="/contact" element={<ContactPage />} />
+                <Route path="/simulate" element={<IoTSimulator />} />
       </Routes>
     </Layout>
   )

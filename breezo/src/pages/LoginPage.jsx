@@ -1,8 +1,10 @@
-import { useState } from 'react'
-import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
-import { buildTokenSession, readTokenSession, writeTokenSession } from '../lib/tokenization'
-import { loginOperator } from '../lib/tokenizationApi'
-import styles from './AuthPage.module.css'
+import Cookies from "js-cookie";
+import { useState } from "react";
+import { Link, Navigate, useNavigate } from "react-router-dom";
+
+import { login } from "../api/auth.api";
+import { readTokenSession, writeTokenSession } from "../lib/tokenization";
+import styles from "./AuthPage.module.css";
 
 function SignalCard({ label, value, note }) {
   return (
@@ -11,66 +13,105 @@ function SignalCard({ label, value, note }) {
       <div className={styles.signalValue}>{value}</div>
       <div className={styles.signalNote}>{note}</div>
     </article>
-  )
+  );
 }
 
 export default function LoginPage() {
-  const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
-  const session = readTokenSession()
-  const redirectTarget = searchParams.get('redirect') || '/tokenization'
-  const [showPassword, setShowPassword] = useState(false)
+  const navigate = useNavigate();
+  const session = readTokenSession();
+
   const [form, setForm] = useState({
-    email: 'owner@breezo.io',
-    password: 'SecurePass123!',
-  })
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+    email: "",
+    password: "",
+  });
 
-  if (session) {
-    return <Navigate to={redirectTarget} replace />
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  if (session) return <Navigate to="/tokenization" replace />;
+
+  function handleChange(e) {
+    const { name, value } = e.target;
+    setForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   }
+async function handleSubmit(e) {
+  e.preventDefault();
+  setError("");
+  setLoading(true);
 
-  function handleChange(event) {
-    const { name, value } = event.target
-    setForm((current) => ({ ...current, [name]: value }))
-  }
+  try {
+    const res = await login(form); // or signup(form)
 
-  async function handleSubmit(event) {
-    event.preventDefault()
-    setError('')
+    const response = res.data;
 
-    try {
-      setLoading(true)
-      const account = await loginOperator(form)
-      writeTokenSession(buildTokenSession(account))
-      navigate(redirectTarget)
-    } catch (e) {
-      setError(e.message)
-    } finally {
-      setLoading(false)
+    if (!response?.success) {
+      throw new Error(response?.message || "Auth failed");
     }
+
+    const { user, token } = response.data;
+
+    writeTokenSession({
+      ownerName: user?.name,
+      ownerEmail: user?.email,
+      token: token,
+    });
+
+    navigate("/tokenization");
+
+  } catch (err) {
+    setError(
+      err?.response?.data?.message ||
+      err?.message ||
+      "Auth failed"
+    );
+  } finally {
+    setLoading(false);
   }
+}
+
+
+
 
   return (
     <div className={styles.page}>
       <section className={styles.shell}>
+
+        {/* LEFT SIDE (UI SAME STYLE AS SIGNUP) */}
         <div className={styles.showcase}>
           <div className={styles.badge}>BREEZO private access</div>
           <div className={styles.orbitBadge}>AI-tech x DePIN</div>
-          <h1 className={styles.title}>Operator access to your private node cockpit.</h1>
+
+          <h1 className={styles.title}>
+            Operator access to your node dashboard.
+          </h1>
+
           <p className={styles.subtitle}>
-            A tighter premium login surface for BREEZO node owners. Sign in to open your personal
-            AQI, BMP, sync, and reward dashboard.
+            Login securely to view AQI, device telemetry, and reward data.
           </p>
 
           <div className={styles.signalRail}>
-            <SignalCard label="Identity" value="Email + password" note="Minimal secure access for your operator profile." />
-            <SignalCard label="Telemetry" value="Private device view" note="Only your node data appears after authentication." />
-            <SignalCard label="Rewards" value="Claim-ready panel" note="Track AQI-linked rewards and sync state privately." />
+            <SignalCard
+              label="Identity"
+              value="Email login"
+              note="Secure authentication layer"
+            />
+            <SignalCard
+              label="Security"
+              value="JWT session"
+              note="Stored in cookie & memory"
+            />
+            <SignalCard
+              label="Dashboard"
+              value="Private node data"
+              note="Accessible after login only"
+            />
           </div>
         </div>
 
+        {/* RIGHT SIDE FORM */}
         <div className={styles.card}>
           <div className={styles.formHeader}>
             <div>
@@ -82,44 +123,48 @@ export default function LoginPage() {
           <form className={styles.form} onSubmit={handleSubmit}>
             <label className={styles.field}>
               <span className={styles.fieldLabel}>Email</span>
-              <input className={styles.input} type="email" name="email" value={form.email} onChange={handleChange} required />
+              <input
+                className={styles.input}
+                type="email"
+                name="email"
+                value={form.email}
+                onChange={handleChange}
+                required
+              />
             </label>
 
             <label className={styles.field}>
               <span className={styles.fieldLabel}>Password</span>
-              <div className={styles.passwordWrap}>
-                <input
-                  className={`${styles.input} ${styles.passwordInput}`}
-                  type={showPassword ? 'text' : 'password'}
-                  name="password"
-                  value={form.password}
-                  onChange={handleChange}
-                  required
-                />
-                <button
-                  className={styles.toggleBtn}
-                  type="button"
-                  onClick={() => setShowPassword((current) => !current)}
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
-                >
-                  {showPassword ? 'Hide' : 'Show'}
-                </button>
-              </div>
+              <input
+                className={styles.input}
+                type="password"
+                name="password"
+                value={form.password}
+                onChange={handleChange}
+                required
+              />
             </label>
 
             {error && <div className={styles.errorBox}>{error}</div>}
 
-            <button className={styles.primaryBtn} type="submit" disabled={loading}>
-              {loading ? 'Opening dashboard...' : 'Login'}
+            <button
+              className={styles.primaryBtn}
+              type="submit"
+              disabled={loading}
+            >
+              {loading ? "Logging in..." : "Login"}
             </button>
           </form>
 
           <div className={styles.switchRow}>
             <span className={styles.switchText}>New operator?</span>
-            <Link className={styles.linkBtn} to="/signup">Create account</Link>
+            <Link className={styles.linkBtn} to="/signup">
+              Create account
+            </Link>
           </div>
         </div>
+
       </section>
     </div>
-  )
+  );
 }

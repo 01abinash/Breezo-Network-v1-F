@@ -1,372 +1,392 @@
-import { useEffect, useMemo, useState } from 'react'
-import { Navigate } from 'react-router-dom'
-import { readTokenSession, TOKEN_SESSION_EVENT, TOKEN_SESSION_KEY } from '../lib/tokenization'
+import { useEffect, useState } from "react";
+import { Navigate } from "react-router-dom";
+import { readTokenSession, TOKEN_SESSION_EVENT } from "../lib/tokenization";
 import {
+  getApiKeyDashboard,
   createOperatorApiKey,
   deleteOperatorApiKey,
-  getApiKeyDashboard,
-} from '../lib/tokenizationApi'
-import styles from './ApiKeysPage.module.css'
+} from "../api/apiKey.api";
+import styles from "./ApiKeysPage.module.css";
 
-function formatDate(value) {
-  return new Date(value).toLocaleString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  })
+// ─── helpers ────────────────────────────────────────────────────────────────
+
+function maskKey(key = "") {
+  if (key.length <= 16) return key;
+  return key.slice(0, 14) + "••••••••" + key.slice(-6);
 }
 
-function formatToken(value) {
-  return Number(value || 0).toFixed(3)
+function fmtDate(iso) {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
 }
+
+// ─── component ──────────────────────────────────────────────────────────────
 
 export default function ApiKeysPage() {
-  const [session, setSession] = useState(null)
-  const [dashboard, setDashboard] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [submitting, setSubmitting] = useState(false)
-  const [copied, setCopied] = useState(false)
-  const [flash, setFlash] = useState('')
-  const [error, setError] = useState('')
-  const [generatedKey, setGeneratedKey] = useState('')
-  const [form, setForm] = useState({
-    name: '',
-    limit: '1000',
-  })
+  const [session, setSession] = useState(readTokenSession());
+  const [keys, setKeys] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [flash, setFlash] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
+  const [form, setForm] = useState({ name: "", limit: 1000 });
+  const [newKey, setNewKey] = useState(null); // stores the just-created key string
+  const [copiedId, setCopiedId] = useState(null);
+  const [revealedId, setRevealedId] = useState(null);
 
-  useEffect(() => {
-    const sync = async () => {
-      const stored = readTokenSession()
-      setSession(stored)
+  // ── data ──────────────────────────────────────────────────────────────────
 
-      if (!stored) {
-        setDashboard(null)
-        setLoading(false)
-        return
-      }
-
-      try {
-        setLoading(true)
-        const next = await getApiKeyDashboard(stored)
-        setDashboard(next)
-      } catch {
-        setDashboard(null)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    const onSessionChange = (event) => {
-      const next = event.detail ?? null
-      setSession(next)
-      if (!next) {
-        setDashboard(null)
-        setLoading(false)
-        return
-      }
-      void sync()
-    }
-
-    const onStorage = (event) => {
-      if (event.key === null || event.key === TOKEN_SESSION_KEY) {
-        void sync()
-      }
-    }
-
-    void sync()
-    window.addEventListener(TOKEN_SESSION_EVENT, onSessionChange)
-    window.addEventListener('storage', onStorage)
-    return () => {
-      window.removeEventListener(TOKEN_SESSION_EVENT, onSessionChange)
-      window.removeEventListener('storage', onStorage)
-    }
-  }, [])
-
-  useEffect(() => {
-    if (!copied) return undefined
-    const timer = window.setTimeout(() => setCopied(false), 1800)
-    return () => window.clearTimeout(timer)
-  }, [copied])
-
-  const keys = dashboard?.apiKeys ?? []
-  const usageSummary = dashboard?.usageSummary
-
-  const workingFlow = useMemo(
-    () => [
-      'User logs in and opens the API Key page.',
-      'User sees account details, token balance, and staked tokens.',
-      'User creates an API key by entering a key name and usage limit.',
-      'System generates a key and shows it once.',
-      'Each request checks key validity, usage limit, balance, and minimum stake before processing.',
-      'Usage rises and token cost is deducted at 0.001 token per request.',
-    ],
-    []
-  )
-
-  if (!loading && !session) {
-    return <Navigate to="/login?redirect=%2Fapi-keys" replace />
-  }
-
-  async function refreshDashboard() {
-    if (!session) return
-    const next = await getApiKeyDashboard(session)
-    setDashboard(next)
-  }
-
-  function handleChange(event) {
-    const { name, value } = event.target
-    setForm((current) => ({ ...current, [name]: value }))
-  }
-
-  async function handleCreateKey(event) {
-    event.preventDefault()
-    if (!session) return
-
-    setError('')
-    setFlash('')
-
+  const loadData = async (token) => {
     try {
-      setSubmitting(true)
-      const result = await createOperatorApiKey(session, form)
-      setGeneratedKey(result.generatedKey)
-      setDashboard(result.dashboard)
-      setForm({ name: '', limit: '1000' })
-      setFlash('API key created. Copy it now because it is only shown once.')
-    } catch (err) {
-      setError(err.message || 'Failed to create API key.')
+      setLoading(true);
+      setError("");
+      const res = await getApiKeyDashboard(token);
+      if (res?.data && Array.isArray(res.data)) setKeys(res.data);
+      else if (Array.isArray(res)) setKeys(res);
+      else setKeys([]);
+    } catch (e) {
+      setError(e.message || "Failed to fetch keys");
     } finally {
-      setSubmitting(false)
+      setLoading(false);
     }
-  }
+  };
 
-  async function handleCopyKey() {
-    if (!generatedKey) return
-    await navigator.clipboard.writeText(generatedKey)
-    setCopied(true)
-  }
+  useEffect(() => {
+    if (session) loadData(session);
+    else setLoading(false);
 
-  async function handleDeleteKey(keyId) {
-    if (!session) return
-    setError('')
-    setFlash('')
-    const next = await deleteOperatorApiKey(session, keyId)
-    setDashboard(next)
-    setFlash('API key deleted.')
-    if (generatedKey) {
-      setGeneratedKey('')
+    const sync = () => setSession(readTokenSession());
+    window.addEventListener(TOKEN_SESSION_EVENT, sync);
+    return () => window.removeEventListener(TOKEN_SESSION_EVENT, sync);
+  }, [session]);
+
+  // auto-clear flash/error
+  useEffect(() => {
+    if (!flash) return;
+    const t = setTimeout(() => setFlash(""), 4000);
+    return () => clearTimeout(t);
+  }, [flash]);
+
+  // ── actions ───────────────────────────────────────────────────────────────
+
+  const handleCreate = async (e) => {
+    e.preventDefault();
+    if (!form.name.trim()) return;
+    setSubmitting(true);
+    setError("");
+    setNewKey(null);
+    try {
+      const res = await createOperatorApiKey(session, form);
+      // Surface the raw key if the API returns it
+      const created = res?.data || res;
+      if (created?.key) setNewKey(created.key);
+      setFlash("API key created successfully!");
+      setForm({ name: "", limit: 1000 });
+      await loadData(session);
+    } catch (e) {
+      setError(e.message || "Creation failed");
+    } finally {
+      setSubmitting(false);
     }
-  }
+  };
 
-  if (loading || !dashboard) {
-    return (
-      <div className={styles.page}>
-        <section className={styles.loadingCard}>
-          <div className={styles.kicker}>API key management</div>
-          <h1 className={styles.title}>Loading your API controls...</h1>
-        </section>
-      </div>
-    )
-  }
+  const handleDelete = async (id) => {
+    if (!window.confirm("Permanently delete this API key? This cannot be undone.")) return;
+    setDeletingId(id);
+    setError("");
+    try {
+      await deleteOperatorApiKey(session, id);
+      setFlash("API key deleted.");
+      setKeys((prev) => prev.filter((k) => k._id !== id));
+    } catch (e) {
+      setError(e.message || "Delete failed");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const handleCopy = (text, id) => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(null), 2000);
+    });
+  };
+
+  const toggleReveal = (id) => {
+    setRevealedId((prev) => (prev === id ? null : id));
+  };
+
+  // ── derived stats ─────────────────────────────────────────────────────────
+
+  const activeCount = keys.filter((k) => k.isActive).length;
+  const totalUsed = keys.reduce((s, k) => s + (k.usedCredits ?? k.usedCount ?? 0), 0);
+  const totalCredits = keys.reduce((s, k) => s + (k.credits ?? 0), 0);
+
+  // ── redirect ──────────────────────────────────────────────────────────────
+
+  if (!loading && !session) return <Navigate to="/login" replace />;
+
+  // ─────────────────────────────────────────────────────────────────────────
 
   return (
     <div className={styles.page}>
-      <section className={styles.shell}>
-        <header className={styles.hero}>
-          <div className={styles.heroCopy}>
-            <div className={styles.kicker}>API key management</div>
-            <h1 className={styles.title}>Secure access for every data integration.</h1>
+      <div className={styles.shell}>
+
+        {/* ── HEADER ── */}
+        <div className={styles.header}>
+          <div className={styles.headerLeft}>
+            <p className={styles.kicker}>Developer Console</p>
+            <h1 className={styles.title}>API Key Management</h1>
             <p className={styles.subtitle}>
-              Create usage-limited credentials, review consumption costs, and manage BREEZO API
-              access from one premium control surface built for operators and partners.
+              Create, inspect, and revoke access tokens for your applications.
             </p>
           </div>
-          <div className={styles.heroSummary}>
-            <div className={styles.heroMetric}>
-              <span>Total Requests</span>
-              <strong>{usageSummary.totalRequests.toLocaleString('en-US')}</strong>
+          <div className={styles.headerStats}>
+            <div className={styles.statCell}>
+              <span className={styles.statLabel}>Total Keys</span>
+              <span className={styles.statValue}>{keys.length}</span>
             </div>
-            <div className={styles.heroMetric}>
-              <span>Total Cost</span>
-              <strong>{formatToken(usageSummary.totalCost)} TOK</strong>
+            <div className={styles.statCell}>
+              <span className={styles.statLabel}>Active</span>
+              <span className={styles.statValue} style={{ color: "var(--green)" }}>
+                {activeCount}
+              </span>
             </div>
-            <div className={styles.heroMetric}>
-              <span>Cost / Request</span>
-              <strong>{formatToken(usageSummary.costPerRequest)}</strong>
+            <div className={styles.statCell}>
+              <span className={styles.statLabel}>Credits Used</span>
+              <span className={styles.statValue}>{totalUsed}</span>
+            </div>
+            <div className={styles.statCell}>
+              <span className={styles.statLabel}>Total Credits</span>
+              <span className={styles.statValue}>{totalCredits}</span>
             </div>
           </div>
-        </header>
+        </div>
 
-        <section className={styles.accountStrip}>
-          <article className={styles.accountItem}>
-            <span>User Email</span>
-            <strong>{dashboard.owner.email}</strong>
-            <small>Primary operator identity for API access.</small>
-          </article>
-          <article className={styles.accountItem}>
-            <span>Token Balance</span>
-            <strong>{formatToken(dashboard.tokenBalance)} BREEZO</strong>
-            <small>Used to cover metered API request costs.</small>
-          </article>
-          <article className={styles.accountItem}>
-            <span>Staked Tokens</span>
-            <strong>{formatToken(dashboard.stakedTokens)} BREEZO</strong>
-            <small>Minimum stake signal for key-backed access.</small>
-          </article>
-        </section>
+        {/* ── ALERTS ── */}
+        {error && <div className={styles.error}>⚠ {error}</div>}
+        {flash && <div className={styles.flash}>✓ {flash}</div>}
 
-        <section className={styles.workspace}>
-          <div className={styles.leftColumn}>
-            <article className={styles.createPanel}>
-              <div className={styles.cardLabel}>Create API key</div>
-              <div className={styles.panelTitle}>Provision a new access credential</div>
-              <p className={styles.createNote}>
-                Name the key, define its request ceiling, and generate a credential for the
-                integration you want to authorize.
-              </p>
-              <form className={styles.form} onSubmit={handleCreateKey}>
-                <label className={styles.field}>
-                  <span>Key Name</span>
+        {/* ── NEW KEY BANNER ── */}
+        {newKey && (
+          <div className={styles.keyBanner}>
+            <div className={styles.keyBannerHeader}>
+              <span className={styles.keyBannerTitle}>🔑 New Key Generated</span>
+              <span className={styles.keyBannerNote}>
+                Copy it now — it won't be shown again
+              </span>
+            </div>
+            <div className={styles.keyBannerBody}>
+              <code className={styles.generatedKeyCode}>{newKey}</code>
+              <button
+                className={styles.btnGhost}
+                onClick={() => handleCopy(newKey, "banner")}
+              >
+                {copiedId === "banner" ? "Copied!" : "Copy"}
+              </button>
+              <button
+                className={styles.btnGhost}
+                onClick={() => setNewKey(null)}
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── MAIN GRID ── */}
+        <div className={styles.grid}>
+
+          {/* ── SIDEBAR: CREATE FORM ── */}
+          <div className={styles.sidebar}>
+            <div className={styles.panel}>
+              <div className={styles.panelHeader}>
+                <h2 className={styles.panelTitle}>Create New Key</h2>
+              </div>
+              <form className={styles.panelBody} onSubmit={handleCreate}>
+                <div className={styles.fieldGroup}>
+                  <label className={styles.fieldLabel}>Key Name</label>
                   <input
                     className={styles.input}
-                    type="text"
-                    name="name"
+                    placeholder="e.g. Mobile App, Production"
                     value={form.name}
-                    onChange={handleChange}
-                    placeholder="Production analytics key"
-                    autoComplete="off"
+                    onChange={(e) => setForm({ ...form, name: e.target.value })}
                     required
+                    maxLength={64}
                   />
-                </label>
-
-                <label className={styles.field}>
-                  <span>Usage Limit</span>
+                </div>
+                <div className={styles.fieldGroup}>
+                  <label className={styles.fieldLabel}>Credit Limit</label>
                   <input
                     className={styles.input}
                     type="number"
-                    min="1"
-                    step="1"
-                    name="limit"
+                    min={1}
+                    max={1_000_000}
+                    placeholder="1000"
                     value={form.limit}
-                    onChange={handleChange}
-                    autoComplete="off"
-                    required
+                    onChange={(e) =>
+                      setForm({ ...form, limit: Number(e.target.value) })
+                    }
                   />
-                </label>
-
-                {error && <div className={styles.errorBox}>{error}</div>}
-                {flash && <div className={styles.flashBox}>{flash}</div>}
-
-                <button className={styles.primaryBtn} type="submit" disabled={submitting}>
-                  {submitting ? 'Creating...' : 'Create API Key'}
+                </div>
+                <div className={styles.divider} />
+                <button
+                  className={styles.btnPrimary}
+                  type="submit"
+                  disabled={submitting || !form.name.trim()}
+                >
+                  {submitting ? "Generating…" : "Generate API Key"}
                 </button>
               </form>
-            </article>
+            </div>
 
-            {generatedKey && (
-              <article className={styles.generatedCard}>
-                <div className={styles.generatedHeader}>
-                  <div>
-                    <div className={styles.generatedLabel}>Generated API Key</div>
-                    <p className={styles.generatedHint}>Shown once. Store it before leaving this page.</p>
-                  </div>
-                  <button className={styles.secondaryBtn} type="button" onClick={handleCopyKey}>
-                    {copied ? 'Copied' : 'Copy API Key'}
-                  </button>
+            {/* Plan info */}
+            {keys.length > 0 && (
+              <div className={styles.panel}>
+                <div className={styles.panelHeader}>
+                  <h2 className={styles.panelTitle}>Account Plan</h2>
                 </div>
-                <code className={styles.generatedKey}>{generatedKey}</code>
-              </article>
-            )}
-          </div>
-
-          <div className={styles.rightColumn}>
-            <article className={styles.keysPanel}>
-              <div className={styles.panelHeader}>
-                <div>
-                  <div className={styles.cardLabel}>API keys list</div>
-                  <div className={styles.panelTitle}>Manage issued keys</div>
-                </div>
-              </div>
-
-              {keys.length === 0 ? (
-                <div className={styles.emptyState}>
-                  <strong>No API keys yet.</strong>
-                  <p>Create your first key to start protected API access for your integrations.</p>
-                </div>
-              ) : (
-                <div className={styles.keysTable}>
-                  <div className={styles.tableHead}>
-                    <span>Key Name</span>
-                    <span>API Key</span>
-                    <span>Created Date</span>
-                    <span>Usage</span>
-                    <span>Limit</span>
-                    <span>Status</span>
-                    <span>Action</span>
-                  </div>
-
-                  {keys.map((key) => (
-                    <div className={styles.tableRow} key={key.id}>
-                      <span>{key.name}</span>
-                      <code className={styles.maskedKey}>{key.maskedKey}</code>
-                      <span>{formatDate(key.createdAt)}</span>
-                      <span>{key.usage.toLocaleString('en-US')}</span>
-                      <span>{key.limit.toLocaleString('en-US')}</span>
-                      <span className={key.status === 'active' ? styles.statusActive : styles.statusRevoked}>
-                        {key.status}
-                      </span>
-                      <button className={styles.deleteBtn} type="button" onClick={() => handleDeleteKey(key.id)}>
-                        Delete
-                      </button>
+                <div className={styles.accountBar} style={{ margin: "0", border: "none", borderRadius: 0, flexDirection: "column", gap: 0 }}>
+                  {[
+                    ["Plan", keys[0]?.plan ?? "free"],
+                    ["Keys", `${keys.length} total`],
+                    ["Active", `${activeCount} enabled`],
+                  ].map(([label, value]) => (
+                    <div key={label} className={styles.accountItem}>
+                      <span>{label}</span>
+                      <strong>{value}</strong>
                     </div>
                   ))}
                 </div>
+              </div>
+            )}
+          </div>
+
+          {/* ── MAIN: KEYS TABLE ── */}
+          <div className={styles.panel}>
+            <div className={styles.panelHeader}>
+              <h2 className={styles.panelTitle}>
+                API Keys
+                {!loading && (
+                  <span style={{ color: "var(--text-muted)", fontWeight: 400, marginLeft: 8 }}>
+                    ({keys.length})
+                  </span>
+                )}
+              </h2>
+              {!loading && keys.length > 0 && (
+                <button
+                  className={styles.btnGhost}
+                  onClick={() => loadData(session)}
+                >
+                  Refresh
+                </button>
               )}
-            </article>
-
-            <article className={styles.usagePanel}>
-              <div className={styles.panelHeader}>
-                <div>
-                  <div className={styles.cardLabel}>Usage summary</div>
-                  <div className={styles.panelTitle}>Token-backed consumption overview</div>
-                </div>
-              </div>
-
-              <div className={styles.usageGrid}>
-                <div className={styles.usageCard}>
-                  <span>Total Requests</span>
-                  <strong>{usageSummary.totalRequests.toLocaleString('en-US')}</strong>
-                </div>
-                <div className={styles.usageCard}>
-                  <span>Total Cost</span>
-                  <strong>{formatToken(usageSummary.totalCost)} TOK</strong>
-                </div>
-                <div className={styles.usageCard}>
-                  <span>Cost per Request</span>
-                  <strong>{formatToken(usageSummary.costPerRequest)} TOK</strong>
-                </div>
-              </div>
-            </article>
-          </div>
-        </section>
-
-        <article className={styles.flowPanel}>
-          <div className={styles.panelHeader}>
-            <div>
-              <div className={styles.cardLabel}>Working flow</div>
-              <div className={styles.panelTitle}>How the API key system behaves</div>
             </div>
-          </div>
 
-          <div className={styles.flowList}>
-            {workingFlow.map((step, index) => (
-              <div className={styles.flowItem} key={step}>
-                <span className={styles.flowIndex}>{String(index + 1).padStart(2, '0')}</span>
-                <p>{step}</p>
+            {loading ? (
+              <div className={styles.loadingCard}>Loading keys…</div>
+            ) : keys.length === 0 ? (
+              <div className={styles.emptyState}>
+                <div className={styles.emptyIcon}>🗝</div>
+                <div>No API keys yet. Create your first key to get started.</div>
               </div>
-            ))}
+            ) : (
+              <div className={styles.tableWrap}>
+                {/* Head */}
+                <div className={styles.tableHead}>
+                  <div className={styles.thCell}>Name</div>
+                  <div className={styles.thCell}>Key</div>
+                  <div className={styles.thCell}>Status</div>
+                  <div className={styles.thCell}>Usage</div>
+                  <div className={styles.thCell}>Created</div>
+                  <div className={styles.thCell}>Action</div>
+                </div>
+
+                {/* Rows */}
+                <div className={styles.tableBody}>
+                  {keys.map((k) => {
+                    const isRevealed = revealedId === k._id;
+                    const isCopied = copiedId === k._id;
+                    const isDeleting = deletingId === k._id;
+
+                    return (
+                      <div key={k._id} className={styles.tableRow}>
+                        {/* Name */}
+                        <div className={styles.tdName} title={k.name}>
+                          {k.name || "Untitled"}
+                        </div>
+
+                        {/* Key with reveal + copy */}
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
+                          <span className={styles.tdMono} title={k.key}>
+                            {isRevealed ? k.key : maskKey(k.key)}
+                          </span>
+                          <button
+                            className={`${styles.btnGhost} ${isRevealed ? styles.btnGhostActive : ""}`}
+                            onClick={() => toggleReveal(k._id)}
+                            title={isRevealed ? "Hide" : "Reveal"}
+                            style={{ padding: "3px 7px", fontSize: 10 }}
+                          >
+                            {isRevealed ? "Hide" : "Show"}
+                          </button>
+                          <button
+                            className={`${styles.btnGhost} ${isCopied ? styles.btnGhostActive : ""}`}
+                            onClick={() => handleCopy(k.key, k._id)}
+                            title="Copy full key"
+                            style={{ padding: "3px 7px", fontSize: 10 }}
+                          >
+                            {isCopied ? "✓" : "Copy"}
+                          </button>
+                        </div>
+
+                        {/* Status badge */}
+                        <div>
+                          <span
+                            className={`${styles.statusBadge} ${
+                              k.isActive ? styles.statusActive : styles.statusInactive
+                            }`}
+                          >
+                            <span className={styles.statusDot} />
+                            {k.isActive ? "Active" : "Inactive"}
+                          </span>
+                        </div>
+
+                        {/* Usage */}
+                        <div className={styles.tdUsage}>
+                          {k.usedCredits ?? k.usedCount ?? 0}
+                          <span style={{ color: "var(--text-muted)" }}>
+                            {" "}/ {k.credits ?? 0}
+                          </span>
+                        </div>
+
+                        {/* Created */}
+                        <div className={styles.tdDate}>{fmtDate(k.createdAt)}</div>
+
+                        {/* Delete */}
+                        <div>
+                          <button
+                            className={styles.btnDanger}
+                            onClick={() => handleDelete(k._id)}
+                            disabled={isDeleting}
+                            title="Delete this API key"
+                          >
+                            {isDeleting ? "Deleting…" : "Delete"}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
-        </article>
-      </section>
+        </div>
+      </div>
     </div>
-  )
+  );
 }

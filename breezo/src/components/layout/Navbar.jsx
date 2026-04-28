@@ -1,65 +1,70 @@
-import { useState, useEffect, useRef } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { clearTokenSession, readTokenSession, TOKEN_SESSION_EVENT } from '../../lib/tokenization'
-import styles from './Navbar.module.css'
+import { useState, useEffect, useRef } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import {
+  clearTokenSession,
+  readTokenSession,
+  TOKEN_SESSION_EVENT,
+} from "../../lib/tokenization";
+
+import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
+
+import styles from "./Navbar.module.css";
 
 export default function Navbar() {
-  const [scrolled, setScrolled] = useState(false)
-  const [menuOpen, setMenuOpen] = useState(false)
-  const [profileOpen, setProfileOpen] = useState(false)
-  const [session, setSession] = useState(null)
-  const location = useLocation()
-  const navigate = useNavigate()
-  const profileRef = useRef(null)
+  const [scrolled, setScrolled] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [session, setSession] = useState(null);
+
+  const location = useLocation();
+  const navigate = useNavigate();
+  const profileRef = useRef(null);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 20)
-    window.addEventListener('scroll', onScroll)
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [])
+    const onScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener("scroll", onScroll);
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   useEffect(() => {
-    setMenuOpen(false)
-    setProfileOpen(false)
-  }, [location])
+    setMenuOpen(false);
+    setProfileOpen(false);
+  }, [location]);
 
   useEffect(() => {
-    const syncSession = () => setSession(readTokenSession())
-    const onSessionChange = (event) => setSession(event.detail ?? null)
-    const onStorage = (event) => {
-      if (event.key === null || event.key === 'breezo-token-session') {
-        syncSession()
-      }
-    }
+    const syncSession = () => setSession(readTokenSession());
+
+    const onSessionChange = (event) => setSession(event.detail ?? null);
+
     const onPointerDown = (event) => {
       if (profileRef.current && !profileRef.current.contains(event.target)) {
-        setProfileOpen(false)
+        setProfileOpen(false);
       }
-    }
+    };
 
-    syncSession()
-    window.addEventListener(TOKEN_SESSION_EVENT, onSessionChange)
-    window.addEventListener('storage', onStorage)
-    window.addEventListener('pointerdown', onPointerDown)
+    syncSession();
+
+    window.addEventListener(TOKEN_SESSION_EVENT, onSessionChange);
+    window.addEventListener("pointerdown", onPointerDown);
 
     return () => {
-      window.removeEventListener(TOKEN_SESSION_EVENT, onSessionChange)
-      window.removeEventListener('storage', onStorage)
-      window.removeEventListener('pointerdown', onPointerDown)
-    }
-  }, [])
+      window.removeEventListener(TOKEN_SESSION_EVENT, onSessionChange);
+      window.removeEventListener("pointerdown", onPointerDown);
+    };
+  }, []);
 
   const isActive = (path) => location.pathname === path
   const profileLabel = String(session?.ownerName || session?.ownerEmail || 'Profile').trim()
 
   function handleLogout() {
-    clearTokenSession()
-    setProfileOpen(false)
-    navigate('/login')
+    clearTokenSession();
+    setProfileOpen(false);
+    navigate("/login");
   }
 
   return (
-    <nav className={`${styles.nav} ${scrolled ? styles.scrolled : ''}`}>
+    <nav className={`${styles.nav} ${scrolled ? styles.scrolled : ""}`}>
+      {/* LOGO */}
       <Link to="/" className={styles.logo}>
         <img src="/logo2.png" alt="BREEZO" className={styles.logoImg} />
         BREEZO NETWORK
@@ -75,12 +80,24 @@ export default function Navbar() {
         <li><Link to="/contact"   className={isActive('/contact')   ? styles.active : ''}>Contact Us</Link></li>
       </ul>
 
+      {/* RIGHT SECTION */}
       <div className={styles.right}>
+
+        {/* 🔥 WALLET CONNECT (BEST PLACE) */}
+        <WalletMultiButton
+          style={{
+            background: "orange",
+            color: "white",
+            borderRadius: "8px",
+          }}
+        />
+
+        {/* SESSION PROFILE */}
         {session ? (
           <div className={styles.profileWrap} ref={profileRef}>
             <button
               className={styles.profileBtn}
-              onClick={() => setProfileOpen((current) => !current)}
+              onClick={() => setProfileOpen((v) => !v)}
               aria-haspopup="menu"
               aria-expanded={profileOpen}
               type="button"
@@ -95,7 +112,12 @@ export default function Navbar() {
                   <span className={styles.dropdownName}>{profileLabel}</span>
                   <span className={styles.dropdownSub}>{session.ownerEmail}</span>
                 </div>
-                <button className={styles.dropdownItem} onClick={() => navigate('/tokenization')} type="button" role="menuitem">
+
+                <button
+                  className={styles.dropdownItem}
+                  onClick={() => navigate("/tokenization")}
+                  type="button"
+                >
                   Open dashboard
                 </button>
                 <button className={styles.dropdownItem} onClick={() => navigate('/api-keys')} type="button" role="menuitem">
@@ -108,18 +130,27 @@ export default function Navbar() {
             )}
           </div>
         ) : (
-          <button className={styles.ctaBtn} onClick={() => navigate('/login')}>
+          <button
+            className={styles.ctaBtn}
+            onClick={() => navigate("/login")}
+          >
             Login
           </button>
         )}
+
+        {/* HAMBURGER */}
         <button
-          className={`${styles.hamburger} ${menuOpen ? styles.hamburgerOpen : ''}`}
-          onClick={() => setMenuOpen(v => !v)}
+          className={`${styles.hamburger} ${
+            menuOpen ? styles.hamburgerOpen : ""
+          }`}
+          onClick={() => setMenuOpen((v) => !v)}
           aria-label="Toggle menu"
         >
-          <span /><span /><span />
+          <span />
+          <span />
+          <span />
         </button>
       </div>
     </nav>
-  )
+  );
 }

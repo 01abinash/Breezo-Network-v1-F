@@ -1,433 +1,515 @@
-import { useEffect, useState } from 'react'
-import { Navigate } from 'react-router-dom'
-import {
-  readTokenSession,
-  TOKEN_SESSION_EVENT,
-  TOKEN_SESSION_KEY,
-} from '../lib/tokenization'
-import {
-  connectOperatorWallet,
-  disconnectOperatorWallet,
-  getOperatorDashboard,
-} from '../lib/tokenizationApi'
-import styles from './TokenizationPage.module.css'
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Navigate } from "react-router-dom";
+import { useWallet, useConnection } from "@solana/wallet-adapter-react";
+import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
+import { dashboard as fetchDashboard } from "../api/dashboard.api";
+import { readTokenSession, TOKEN_SESSION_EVENT } from "../lib/tokenization";
+import { getNodeRewardBalance, claimReward } from "../solana/program/breezo.method";
+import { useProgram } from "../hooks/useProgram";
+import styles from "./TokenizationPage.module.css";
 
-const TIMING = {
-  hero: 80,
-  strip: 210,
-  metrics: 360,
-  details: 520,
-}
+// ─────────────────────────────────────────────
+// HELPERS
+// ─────────────────────────────────────────────
 
-function statusTone(level) {
-  if (level === 'GOOD') return 'var(--teal)'
-  if (level === 'MODERATE') return 'var(--amber)'
-  return 'var(--red)'
-}
+const formatTimeAgo = (date) => {
+  if (!date) return "just now";
+  const diff = Date.now() - new Date(date).getTime();
+  const min = Math.floor(diff / 60000);
+  if (min < 1) return "just now";
+  if (min < 60) return `${min}m ago`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr}h ago`;
+  return `${Math.floor(hr / 24)}d ago`;
+};
 
-function formatLastSeen(value) {
-  return new Date(value).toLocaleString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  })
-}
+const aqiColor = (level) => {
+  if (level === "GOOD") return "#2dd4bf";
+  if (level === "MODERATE") return "#fbbf24";
+  return "#f87171";
+};
 
-function formatWalletLabel(value) {
-  const wallet = String(value || '').trim()
-  if (!wallet) return 'Not connected'
-  if (wallet.includes('...')) return wallet
-  if (wallet.length <= 14) return wallet
-  return `${wallet.slice(0, 6)}...${wallet.slice(-6)}`
-}
-
-function MetricCard({ label, value, note, tone = 'var(--sky)' }) {
-  return (
-    <article className={styles.metricCard}>
-      <div className={styles.metricLabel}>{label}</div>
-      <div className={styles.metricValue} style={{ color: tone }}>{value}</div>
-      <div className={styles.metricNote}>{note}</div>
-    </article>
-  )
-}
+// ─── MAIN PAGE ─────────────────────────────────────────────────────────────────
 
 export default function TokenizationPage() {
-  /* --------------------------------------------------------
-   * PAGE CONTENT STORYBOARD
-   *
-   *   0ms  shell visible
-   *  80ms  hero fades in
-   * 210ms  status strip reveals
-   * 360ms  metric tiles cascade in
-   * 520ms  detail panels settle in
-   * -------------------------------------------------------- */
-  const [session, setSession] = useState(null)
-  const [dashboard, setDashboard] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [claiming, setClaiming] = useState(false)
-  const [walletBusy, setWalletBusy] = useState(false)
-  const [claimMessage, setClaimMessage] = useState('')
-  const [stage, setStage] = useState(0)
+  const [session, setSession]         = useState(null);
+  const [sessionReady, setSessionReady] = useState(false);
+  const [nodes, setNodes]             = useState([]);
+  const [loading, setLoading]         = useState(true);
+  const [lastUpdated, setLastUpdated] = useState(null);
+  const [claiming, setClaiming]       = useState(null); // nodeId currently claiming
+  const [toast, setToast]             = useState(null);
 
+  const intervalRef = useRef(null);
+
+  const { publicKey, connected, disconnect } = useWallet();
+  const walletConnected = connected && !!publicKey;
+  const walletAddress   = useMemo(() => publicKey?.toBase58(), [publicKey]);
+
+  // ── Anchor program via hook ──────────────────────────────────────────────────
+  const program = useProgram();
+
+  // ── Session ──────────────────────────────────────────────────────────────────
   useEffect(() => {
-    const syncSession = async () => {
-      const stored = readTokenSession()
-      setSession(stored)
+    const s = readTokenSession();
+    setSession(s);
+    setSessionReady(true);
 
-      if (!stored) {
-        setDashboard(null)
-        setLoading(false)
-        return
-      }
+    const onChange = (e) => setSession(e.detail);
+    window.addEventListener(TOKEN_SESSION_EVENT, onChange);
+    return () => window.removeEventListener(TOKEN_SESSION_EVENT, onChange);
+  }, []);
 
-      try {
-        setLoading(true)
-        const nextDashboard = await getOperatorDashboard(stored)
-        setDashboard(nextDashboard)
-      } catch {
-        setDashboard(null)
-      } finally {
-        setLoading(false)
-      }
+  // ── Toast helper ─────────────────────────────────────────────────────────────
+  const showToast = (type, msg) => {
+    setToast({ type, msg });
+    setTimeout(() => setToast(null), 5000);
+  };
+
+  // ── Load dashboard + enrich with on-chain balances ───────────────────────────
+  const loadDashboard = async (walletAddr) => {
+    if (!walletAddr || !program) {
+      console.warn("[dashboard] skipping load — no wallet or program");
+      return;
     }
-
-    const onSessionChange = async (event) => {
-      const nextSession = event.detail ?? null
-      setSession(nextSession)
-
-      if (!nextSession) {
-        setDashboard(null)
-        setLoading(false)
-        return
-      }
-
-      try {
-        setLoading(true)
-        const nextDashboard = await getOperatorDashboard(nextSession)
-        setDashboard(nextDashboard)
-      } catch {
-        setDashboard(null)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    const onStorage = (event) => {
-      if (event.key === null || event.key === TOKEN_SESSION_KEY) {
-        syncSession()
-      }
-    }
-
-    syncSession()
-    window.addEventListener(TOKEN_SESSION_EVENT, onSessionChange)
-    window.addEventListener('storage', onStorage)
-
-    return () => {
-      window.removeEventListener(TOKEN_SESSION_EVENT, onSessionChange)
-      window.removeEventListener('storage', onStorage)
-    }
-  }, [])
-
-  useEffect(() => {
-    if (loading || !dashboard) return undefined
-
-    const prefersReducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches
-    if (prefersReducedMotion) {
-      setStage(4)
-      return undefined
-    }
-
-    setStage(0)
-    const timers = []
-    timers.push(window.setTimeout(() => setStage(1), TIMING.hero))
-    timers.push(window.setTimeout(() => setStage(2), TIMING.strip))
-    timers.push(window.setTimeout(() => setStage(3), TIMING.metrics))
-    timers.push(window.setTimeout(() => setStage(4), TIMING.details))
-
-    return () => timers.forEach(window.clearTimeout)
-  }, [loading, dashboard])
-
-  if (!loading && !session) {
-    return <Navigate to="/login" replace />
-  }
-
-  if (loading || !dashboard) {
-    return (
-      <div className={styles.page}>
-        <section className={styles.loadingCard}>
-          <div className={styles.kicker}>Private dashboard</div>
-          <h1 className={styles.title}>Loading your node cockpit...</h1>
-        </section>
-      </div>
-    )
-  }
-
-  const node = dashboard.data[0]
-  const displayName = String(session?.ownerName || dashboard.owner.name || 'Profile').trim()
-  const walletAddress = String(dashboard.owner.walletAddress || '').trim()
-  const walletConnected = Boolean(walletAddress)
-
-  function handleClaimReward() {
-    setClaimMessage('')
-    setClaiming(true)
-
-    window.setTimeout(() => {
-      setClaiming(false)
-      setClaimMessage(`Reward claimed successfully for ${node.nodeId}.`)
-    }, 900)
-  }
-
-  async function handleWalletToggle() {
-    if (!session) return
-
-    setClaimMessage('')
-    setWalletBusy(true)
 
     try {
-      const nextDashboard = walletConnected
-        ? await disconnectOperatorWallet(session)
-        : await connectOperatorWallet(session)
+      setLoading(true);
+      const res  = await fetchDashboard(walletAddr);
+      const data = Array.isArray(res) ? res : res?.data ?? [];
 
-      setDashboard(nextDashboard)
-      setClaimMessage(
-        walletConnected
-          ? 'Wallet disconnected from this operator profile.'
-          : `Wallet connected: ${formatWalletLabel(nextDashboard.owner.walletAddress)}.`
-      )
+      console.log("[dashboard] fetched nodes:", data.length);
+
+      const enriched = await Promise.all(
+        data.map(async (node) => {
+          if (!node.nodeAccount) {
+            console.warn("[dashboard] node has no nodeAccount:", node.nodeId);
+            return { ...node, onChainReward: 0 };
+          }
+
+          try {
+            // ✅ getNodeRewardBalance already returns human-readable BREEZO
+            const onChainReward = await getNodeRewardBalance(program, node.nodeAccount);
+            console.log(`[dashboard] node ${node.nodeId} → onChainReward: ${onChainReward}`);
+            return { ...node, onChainReward };
+          } catch (err) {
+            console.error("[dashboard] failed to read chain for node:", node.nodeId, err);
+            return { ...node, onChainReward: 0 };
+          }
+        })
+      );
+
+      setNodes(enriched);
+      setLastUpdated(new Date());
+    } catch (err) {
+      console.error("[dashboard] fetchDashboard failed:", err);
+      showToast("error", "Failed to load dashboard");
     } finally {
-      setWalletBusy(false)
+      setLoading(false);
     }
+  };
+
+  // ── Auto-refresh every 2 min ─────────────────────────────────────────────────
+  useEffect(() => {
+    if (!walletConnected || !program) return;
+
+    loadDashboard(walletAddress);
+
+    intervalRef.current = setInterval(() => loadDashboard(walletAddress), 120_000);
+    return () => clearInterval(intervalRef.current);
+  }, [walletConnected, walletAddress, program]);
+
+  // ── Claim ────────────────────────────────────────────────────────────────────
+  const handleClaim = async (node) => {
+    if (!program || !publicKey) return;
+
+    try {
+      setClaiming(node.nodeId);
+      console.log("[claim] claiming for node:", node.nodeId, "account:", node.nodeAccount);
+
+      const sig = await claimReward(program, node.nodeAccount, publicKey);
+      console.log("[claim] tx signature:", sig);
+
+      showToast("success", "Claim successful 🚀");
+      await loadDashboard(walletAddress);
+    } catch (err) {
+      console.error("[claim] error:", err);
+      showToast("error", err?.message || "Claim failed");
+    } finally {
+      setClaiming(null);
+    }
+  };
+
+  // ── Derived totals ────────────────────────────────────────────────────────────
+  const totalOnChain   = nodes.reduce((a, n) => a + (n.onChainReward || 0), 0);
+  const totalWeb2      = nodes.reduce((a, n) => a + (n.reward || 0), 0);
+  const claimableCount = nodes.filter((n) => (n.onChainReward || 0) > 0).length;
+
+  // ── Guards ────────────────────────────────────────────────────────────────────
+  if (sessionReady && !session) return <Navigate to="/login" replace />;
+
+  // ── Wallet not connected ──────────────────────────────────────────────────────
+  if (!walletConnected) {
+    return (
+      <div className={styles.page}>
+        <div className={styles.identityPanel}
+          style={{ maxWidth: 480, margin: "0 auto", textAlign: "center" }}>
+          <p className={styles.kicker}>Breezo DePIN</p>
+          <h1 className={styles.title}>Connect<br />Wallet</h1>
+          <p className={styles.subtitle}>
+            Connect your Phantom wallet to view your air quality nodes and claim BREEZO token rewards.
+          </p>
+          <div className={styles.metaRow} style={{ justifyContent: "center", marginTop: 28 }}>
+            <WalletMultiButton />
+          </div>
+        </div>
+      </div>
+    );
   }
 
+  // ── Loading ───────────────────────────────────────────────────────────────────
+  if (loading && nodes.length === 0) {
+    return (
+      <div className={styles.page}>
+        <div className={styles.loadingCard}>
+          <p className={styles.kicker}>Dashboard</p>
+          <p className={styles.subtitle} style={{ marginTop: 10 }}>
+            Loading nodes + reading on-chain balances…
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // ── No nodes ──────────────────────────────────────────────────────────────────
+  if (!loading && nodes.length === 0) {
+    return (
+      <div className={styles.page}>
+        <div className={styles.identityPanel}>
+          <p className={styles.kicker}>No Nodes Found</p>
+          <h2 className={styles.panelTitle} style={{ marginTop: 10 }}>No registered nodes</h2>
+          <p className={styles.subtitle}>This wallet has no air quality nodes on record.</p>
+          <div className={styles.metaRow} style={{ marginTop: 20 }}>
+            <button className={styles.secondaryBtn}
+              onClick={() => loadDashboard(walletAddress)}>Retry</button>
+            <button className={styles.secondaryBtn} onClick={disconnect}>Disconnect</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Main Dashboard ────────────────────────────────────────────────────────────
   return (
     <div className={styles.page}>
-      <section className={`${styles.commandDeck} ${styles.revealBase} ${stage >= 1 ? styles.revealVisible : ''}`}>
+
+      {/* TOAST */}
+      {toast && (
+        <div style={{
+          position: "fixed", top: 20, right: 20, zIndex: 9999,
+          padding: "12px 20px", borderRadius: 14,
+          background: toast.type === "success"
+            ? "rgba(45,212,191,0.12)" : "rgba(248,113,113,0.12)",
+          border: `1px solid ${toast.type === "success"
+            ? "rgba(45,212,191,0.35)" : "rgba(248,113,113,0.35)"}`,
+          color: toast.type === "success" ? "#2dd4bf" : "#f87171",
+          fontSize: 14, fontWeight: 600,
+          backdropFilter: "blur(16px)",
+          boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
+          maxWidth: 340,
+        }}>
+          {toast.msg}
+        </div>
+      )}
+
+      {/* ── COMMAND DECK ── */}
+      <div className={styles.commandDeck}>
+
+        {/* LEFT — Identity */}
         <div className={styles.identityPanel}>
           <div className={styles.panelTopline}>
-            <span className={styles.kicker}>Private node cockpit</span>
-            <span className={styles.levelBadge} style={{ color: statusTone(node.aqiLevel) }}>
-              {node.aqiLevel}
+            <p className={styles.kicker}>DePIN Reward Dashboard</p>
+            <span className={styles.metaPill}>
+              {walletAddress?.slice(0, 6)}…{walletAddress?.slice(-4)}
             </span>
           </div>
 
-          <h1 className={styles.title}>{displayName}</h1>
+          <h1 className={styles.title}>Reward<br />Earnings</h1>
           <p className={styles.subtitle}>
-            Personal command surface for your AQI device, BMP pressure telemetry, sync state, and
-            reward lifecycle.
+            Sensor data streams to Web2. When your node earns ≥ 10 BREEZO the backend
+            syncs it on-chain via{" "}
+            <code style={{ color: "#a78bfa", fontSize: 12 }}>add_reward</code>.
+            Once synced, claim directly to your wallet.
           </p>
 
           <div className={styles.snapshotGrid}>
             <div className={styles.snapshotCard}>
-              <span>AQI signal</span>
-              <strong style={{ color: statusTone(node.aqiLevel) }}>{node.aqi}</strong>
-              <p>{node.aqiLevel.toLowerCase()} live output from your node.</p>
+              <span>Total Nodes</span>
+              <strong>{nodes.length}</strong>
             </div>
             <div className={styles.snapshotCard}>
-              <span>Reward stream</span>
-              <strong>{node.reward.toFixed(2)}</strong>
-              <p>BREEZO ready in the current cycle.</p>
+              <span>Claimable On-Chain</span>
+              <strong style={{ color: "#38bdf8" }}>{totalOnChain.toFixed(4)}</strong>
+              <p>BREEZO ready now</p>
             </div>
             <div className={styles.snapshotCard}>
-              <span>Sync state</span>
-              <strong>{node.syncing ? 'Syncing' : 'Synced'}</strong>
-              <p>Latest device transmission condition.</p>
+              <span>Earned Web2</span>
+              <strong style={{ color: "#a78bfa" }}>{totalWeb2.toFixed(2)}</strong>
+              <p>BREEZO pending sync</p>
             </div>
             <div className={styles.snapshotCard}>
-              <span>Wallet route</span>
-              <strong className={styles.walletRouteValue}>
-                {walletConnected ? formatWalletLabel(walletAddress) : 'Not connected'}
+              <span>Last Refresh</span>
+              <strong style={{ fontSize: 16, letterSpacing: "-0.02em" }}>
+                {formatTimeAgo(lastUpdated)}
               </strong>
-              <p>{walletConnected ? 'Reward destination bound.' : 'Connect before claims go live.'}</p>
+              <p>auto every 2 min</p>
             </div>
           </div>
 
           <div className={styles.metaRow}>
-            <span className={styles.metaPill}>{dashboard.owner.email}</span>
-            <span className={styles.metaPill}>{node.nodeId}</span>
-            <span className={styles.metaPill}>
-              {node.location.lat}, {node.location.lng}
-            </span>
-            <span className={styles.metaPill}>Last seen {formatLastSeen(node.lastSeen)}</span>
-          </div>
-
-          {claimMessage && <div className={styles.successBox}>{claimMessage}</div>}
-        </div>
-
-        <aside className={styles.actionPanel}>
-          <div className={styles.sectionLabel}>Operator actions</div>
-          <div className={styles.panelTitle}>Wallet and claims</div>
-
-          <div className={styles.actionGroup}>
             <button
               className={styles.secondaryBtn}
-              onClick={handleWalletToggle}
-              type="button"
-              disabled={walletBusy}
+              onClick={() => loadDashboard(walletAddress)}
+              disabled={loading}
             >
-              {walletBusy
-                ? (walletConnected ? 'Disconnecting...' : 'Connecting...')
-                : (walletConnected ? 'Disconnect Wallet' : 'Connect Wallet')}
+              {loading ? "Refreshing…" : "↻ Refresh"}
             </button>
-            <button className={styles.primaryBtn} onClick={handleClaimReward} type="button" disabled={claiming}>
-              {claiming ? 'Claiming...' : 'Claim Reward'}
+            <button className={styles.secondaryBtn} onClick={disconnect}>
+              Disconnect
             </button>
           </div>
+        </div>
+
+        {/* RIGHT — Claim summary */}
+        <div className={styles.actionPanel}>
+          <div className={styles.panelTopline}>
+            <p className={styles.kicker}>Claim Summary</p>
+          </div>
+
+          <h2 className={styles.panelTitle}>
+            {totalOnChain > 0
+              ? `${totalOnChain.toFixed(4)} BREEZO`
+              : "Nothing to claim"}
+          </h2>
 
           <div className={styles.actionStack}>
             <div className={styles.actionStat}>
-              <span>Wallet</span>
-              <strong>{walletConnected ? formatWalletLabel(walletAddress) : 'Disconnected'}</strong>
+              <span>On-chain balance</span>
+              <strong style={{ color: "#38bdf8" }}>{totalOnChain.toFixed(4)} BREEZO</strong>
             </div>
             <div className={styles.actionStat}>
-              <span>Node</span>
-              <strong>{node.nodeId}</strong>
+              <span>Web2 accumulated</span>
+              <strong style={{ color: "#a78bfa" }}>{totalWeb2.toFixed(2)} BREEZO</strong>
             </div>
             <div className={styles.actionStat}>
-              <span>Reward</span>
-              <strong>{node.reward.toFixed(2)} BREEZO</strong>
+              <span>Nodes with rewards</span>
+              <strong>{claimableCount} / {nodes.length}</strong>
             </div>
             <div className={styles.actionStat}>
-              <span>AQI level</span>
-              <strong style={{ color: statusTone(node.aqiLevel) }}>{node.aqiLevel}</strong>
+              <span>Sync threshold</span>
+              <strong>≥ 10 BREEZO</strong>
             </div>
           </div>
-        </aside>
-      </section>
 
-      <section className={`${styles.statusBand} ${styles.revealBase} ${stage >= 2 ? styles.revealVisible : ''}`}>
-        <article className={styles.stripCard}>
-          <span className={styles.stripLabel}>AQI Status</span>
-          <strong style={{ color: statusTone(node.aqiLevel) }}>{node.aqiLevel}</strong>
-          <p>{node.aqi} live AQI from your current node output.</p>
-        </article>
-        <article className={styles.stripCard}>
-          <span className={styles.stripLabel}>BMP Pressure</span>
-          <strong>{node.bmp.toFixed(1)}</strong>
-          <p>Pressure reading captured from your BMP sensor.</p>
-        </article>
-        <article className={styles.stripCard}>
-          <span className={styles.stripLabel}>Sync State</span>
-          <strong>{node.syncing ? 'Syncing' : 'Synced'}</strong>
-          <p>Live device state for the latest telemetry cycle.</p>
-        </article>
-        <article className={styles.stripCard}>
-          <span className={styles.stripLabel}>Wallet</span>
-          <strong>{walletConnected ? 'Connected' : 'Disconnected'}</strong>
-          <p>{walletConnected ? formatWalletLabel(walletAddress) : 'Connect a wallet to prepare reward claiming.'}</p>
-        </article>
-        <article className={styles.stripCard}>
-          <span className={styles.stripLabel}>Claim State</span>
-          <strong>{claiming ? 'Processing' : 'Ready'}</strong>
-          <p>Use the claim action when rewards are available.</p>
-        </article>
-      </section>
-
-      {/* <section className={`${styles.metricsGrid} ${styles.revealBase} ${stage >= 3 ? styles.revealVisible : ''}`}>
-        <MetricCard label="AQI" value={node.aqi} note="Current air quality score from your node." tone={statusTone(node.aqiLevel)} />
-        <MetricCard label="PM2.5" value={node.pm25.toFixed(1)} note="Fine particulate output from your device." tone="var(--sky)" />
-        <MetricCard label="BMP" value={node.bmp.toFixed(1)} note="Pressure reading sourced from the BMP sensor." tone="var(--purple)" />
-        <MetricCard label="Reward" value={node.reward.toFixed(2)} note="Current reward allocation for this active cycle." tone="var(--teal)" />
-      </section> */}
-
-      <section className={`${styles.contentGrid} ${styles.revealBase} ${stage >= 4 ? styles.revealVisible : ''}`}>
-        <article className={styles.telemetryPanel}>
-          <div className={styles.panelHeader}>
-            <div>
-              <div className={styles.sectionLabel}>Telemetry</div>
-              <div className={styles.panelTitle}>Sensor field grid</div>
+          {totalOnChain > 0 && (
+            <div className={styles.successBox}>
+              ✓ {claimableCount} node{claimableCount > 1 ? "s are" : " is"} ready to claim below ↓
             </div>
+          )}
+
+          <div className={styles.contextCard} style={{ marginTop: 4 }}>
+            <span>Account Type</span>
+            <strong style={{ fontSize: 12, fontFamily: "monospace" }}>PDA (seeds: node + owner + device)</strong>
+            <p style={{ marginTop: 6, fontSize: 13 }}>
+              Treasury is a PDA with seed{" "}
+              <code style={{ color: "#a78bfa", fontSize: 11 }}>"treasury"</code>.
+              Rewards are SPL token transfers from treasury ATA → your ATA.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* ── NODE GRID ── */}
+      <div className={styles.contentGrid}>
+        <div className={styles.telemetryPanel}>
+          <div className={styles.panelHeader}>
+            <p className={styles.sectionLabel}>Your Nodes</p>
+            <span className={styles.metaPill}>{nodes.length} registered</span>
           </div>
 
           <div className={styles.fieldGrid}>
-            <div className={styles.fieldCard}>
-              <span>Node ID</span>
-              <strong>{node.nodeId}</strong>
-            </div>
-            <div className={styles.fieldCard}>
-              <span>Temperature</span>
-              <strong>{node.temperature.toFixed(1)} deg C</strong>
-            </div>
-            <div className={styles.fieldCard}>
-              <span>Humidity</span>
-              <strong>{node.humidity.toFixed(1)} %</strong>
-            </div>
-            <div className={styles.fieldCard}>
-              <span>Fine particle</span>
-              <strong>{node.pm25.toFixed(1)}</strong>
-            </div>
-            <div className={styles.fieldCard}>
-              <span>BMP</span>
-              <strong>{node.bmp.toFixed(1)}</strong>
-            </div>
-            <div className={styles.fieldCard}>
-              <span>AQI</span>
-              <strong>{node.aqi}</strong>
-            </div>
-            <div className={styles.fieldCard}>
-              <span>AQI Level</span>
-              <strong style={{ color: statusTone(node.aqiLevel) }}>{node.aqiLevel}</strong>
-            </div>
-            <div className={styles.fieldCard}>
-              <span>Reward</span>
-              <strong>{node.reward.toFixed(2)} BREEZO</strong>
-            </div>
-            <div className={styles.fieldCard}>
-              <span>Syncing Status</span>
-              <strong>{node.syncing ? 'Syncing' : 'Synced'}</strong>
-            </div>
-            <div className={styles.fieldCard}>
-              <span>Latitude</span>
-              <strong>{node.location.lat}</strong>
-            </div>
-            <div className={styles.fieldCard}>
-              <span>Longitude</span>
-              <strong>{node.location.lng}</strong>
-            </div>
-            <div className={styles.fieldCard}>
-              <span>Last Seen</span>
-              <strong>{formatLastSeen(node.lastSeen)}</strong>
-            </div>
-          </div>
-        </article>
+            {nodes.map((node, i) => {
+              const onChainReward = node.onChainReward ?? 0;
+              const web2Reward    = node.reward ?? 0;
+              const claimable     = onChainReward > 0;
+              const pendingSync   = web2Reward > 0 && onChainReward === 0 && !node.syncing;
+              const syncing       = node.syncing;
+              const isClaiming    = claiming === node.nodeId;
+              const color         = aqiColor(node.aqiLevel);
 
-        <article className={styles.contextPanel}>
-          <div className={styles.panelHeader}>
-            <div>
-              <div className={styles.sectionLabel}>Context</div>
-              <div className={styles.panelTitle}>Operator overview</div>
-            </div>
-          </div>
+              return (
+                <div key={node.nodeId || i} className={styles.fieldCard}>
 
-          <div className={styles.contextStack}>
+                  {/* Header */}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span>Node #{String(i + 1).padStart(2, "0")}</span>
+                    <span className={styles.levelBadge}
+                      style={{ color, fontSize: 10, padding: "2px 10px", minHeight: 22 }}>
+                      {node.aqiLevel ?? "—"}
+                    </span>
+                  </div>
+
+                  {/* Node ID */}
+                  <span style={{ fontSize: 11, fontFamily: "monospace", color: "#475569" }}>
+                    {node.nodeId
+                      ? `${node.nodeId.slice(0, 8)}…${node.nodeId.slice(-5)}`
+                      : "—"}
+                  </span>
+
+                  {/* AQI */}
+                  <strong style={{ color, fontSize: 28, letterSpacing: "-0.05em", lineHeight: 1 }}>
+                    {node.aqi ?? "—"}
+                    <span style={{ fontSize: 12, fontWeight: 400, color: "#647086", marginLeft: 5 }}>AQI</span>
+                  </strong>
+
+                  {/* Sensor pills */}
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    {node.pm25 != null && (
+                      <span className={styles.metaPill} style={{ minHeight: 26, fontSize: 11 }}>
+                        PM2.5 · {node.pm25}
+                      </span>
+                    )}
+                    {node.pm10 != null && (
+                      <span className={styles.metaPill} style={{ minHeight: 26, fontSize: 11 }}>
+                        PM10 · {node.pm10}
+                      </span>
+                    )}
+                    {node.temperature != null && (
+                      <span className={styles.metaPill} style={{ minHeight: 26, fontSize: 11 }}>
+                        {node.temperature}°C
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Live / syncing indicator */}
+                  <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    <span style={{
+                      width: 7, height: 7, borderRadius: "50%", flexShrink: 0,
+                      background: syncing ? "#fbbf24" : "#2dd4bf",
+                    }} />
+                    <span className={styles.kicker} style={{ letterSpacing: "0.1em" }}>
+                      {syncing ? "Syncing to chain" : "Live"} · {formatTimeAgo(node.lastSeen)}
+                    </span>
+                  </div>
+
+                  {/* ── STATE 1: CLAIMABLE ── */}
+                  {claimable && (
+                    <>
+                      <div className={styles.actionStat} style={{ padding: "8px 12px" }}>
+                        <span>On-chain balance</span>
+                        <strong style={{ color: "#38bdf8" }}>{onChainReward.toFixed(4)} BREEZO</strong>
+                      </div>
+                      {web2Reward > 0 && (
+                        <div className={styles.actionStat} style={{ padding: "8px 12px" }}>
+                          <span>Web2 earned</span>
+                          <strong style={{ color: "#a78bfa" }}>{web2Reward.toFixed(2)} BREEZO</strong>
+                        </div>
+                      )}
+                      <button
+                        className={styles.primaryBtn}
+                        onClick={() => handleClaim(node)}
+                        disabled={claiming !== null}
+                        style={{ width: "100%", marginTop: 8 }}
+                      >
+                        {isClaiming ? "Claiming…" : `Claim ${onChainReward.toFixed(4)} BREEZO`}
+                      </button>
+                    </>
+                  )}
+
+                  {/* ── STATE 2: PENDING SYNC ── */}
+                  {pendingSync && (
+                    <>
+                      <div className={styles.actionStat} style={{ padding: "8px 12px" }}>
+                        <span>Web2 earned</span>
+                        <strong style={{ color: "#a78bfa" }}>{web2Reward.toFixed(2)} BREEZO</strong>
+                      </div>
+                      <div className={styles.successBox} style={{
+                        borderColor: "rgba(251,191,36,0.3)",
+                        background: "rgba(251,191,36,0.07)",
+                        color: "#fbbf24", fontSize: 12, marginTop: 0,
+                      }}>
+                        {web2Reward >= 10
+                          ? "⏳ Threshold met — awaiting backend sync to chain."
+                          : `⏳ ${(10 - web2Reward).toFixed(2)} BREEZO until sync threshold.`}
+                      </div>
+                    </>
+                  )}
+
+                  {/* ── STATE 3: MID-SYNC ── */}
+                  {syncing && !claimable && (
+                    <div className={styles.successBox} style={{
+                      borderColor: "rgba(56,189,248,0.3)",
+                      background: "rgba(56,189,248,0.07)",
+                      color: "#38bdf8", fontSize: 12, marginTop: 0,
+                    }}>
+                      🔄 On-chain write in progress — balance updating…
+                    </div>
+                  )}
+
+                  {/* ── STATE 4: IDLE ── */}
+                  {!claimable && !pendingSync && !syncing && (
+                    <span className={styles.kicker} style={{ color: "#374151" }}>
+                      No rewards yet
+                    </span>
+                  )}
+
+                  {/* Account address */}
+                  {node.nodeAccount && (
+                    <span title={node.nodeAccount}
+                      style={{ fontSize: 10, fontFamily: "monospace", color: "#374151", cursor: "default" }}>
+                      Acct: {node.nodeAccount.slice(0, 8)}…{node.nodeAccount.slice(-5)}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* RIGHT — Pipeline explanation */}
+        <div className={styles.contextPanel}>
+          <p className={styles.sectionLabel}>Reward Pipeline</p>
+          <h3 className={styles.panelTitle} style={{ fontSize: 20, marginTop: 8 }}>How it works</h3>
+          <div className={styles.contextStack} style={{ marginTop: 16 }}>
             <div className={styles.contextCard}>
-              <span>Account owner</span>
-              <strong>{displayName}</strong>
-              <p>Private identity linked to this node telemetry stream.</p>
+              <span>Step 1 — Stream</span>
+              <strong>Sensor ingests data</strong>
+              <p>Your IoT device sends signed payloads to the server. Each reading
+                calculates a reward based on PM2.5 and accumulates in{" "}
+                <code style={{ color: "#a78bfa", fontSize: 11 }}>NodeLatest.reward</code>.</p>
             </div>
             <div className={styles.contextCard}>
-              <span>Email</span>
-              <strong>{dashboard.owner.email}</strong>
-              <p>Primary login for the premium operator surface.</p>
+              <span>Step 2 — Threshold</span>
+              <strong>≥ 10 BREEZO triggers sync</strong>
+              <p>When accumulated reward hits the threshold, the backend calls{" "}
+                <code style={{ color: "#a78bfa", fontSize: 11 }}>add_reward</code> on-chain.</p>
             </div>
             <div className={styles.contextCard}>
-              <span>Wallet</span>
-              <strong>{walletConnected ? formatWalletLabel(walletAddress) : 'Not connected'}</strong>
-              <p>Use the wallet action in the hero area to connect your payout address.</p>
+              <span>Step 3 — On-chain</span>
+              <strong>Account balance updated</strong>
+              <p>The node's PDA <code style={{ color: "#a78bfa", fontSize: 11 }}>rewardBalance</code>{" "}
+                field is incremented. Dashboard reads this directly via Anchor.</p>
             </div>
             <div className={styles.contextCard}>
-              <span>Claim state</span>
-              <strong>{claiming ? 'Processing' : 'Available'}</strong>
-              <p>Use the claim action in the hero area when rewards are ready.</p>
-            </div>
-            <div className={styles.contextCard}>
-              <span>Dashboard data</span>
-              <strong>{dashboard.success ? 'Connected' : 'Unavailable'}</strong>
-              <p>Dummy frontend data for now, ready to be swapped with backend later.</p>
+              <span>Step 4 — Claim</span>
+              <strong>SPL transfer to your wallet</strong>
+              <p>Clicking Claim calls <code style={{ color: "#a78bfa", fontSize: 11 }}>claim_reward</code>.
+                BREEZO tokens move from Treasury ATA → your ATA.{" "}
+                <code style={{ color: "#a78bfa", fontSize: 11 }}>rewardBalance</code> resets to 0.</p>
             </div>
           </div>
-        </article>
-      </section>
+        </div>
+      </div>
     </div>
-  )
+  );
 }

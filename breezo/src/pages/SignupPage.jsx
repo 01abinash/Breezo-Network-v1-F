@@ -1,8 +1,8 @@
-import { useState } from 'react'
-import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
-import { buildTokenSession, readTokenSession, writeTokenSession } from '../lib/tokenization'
-import { signupOperator } from '../lib/tokenizationApi'
-import styles from './AuthPage.module.css'
+import { useState } from "react";
+import { Link, Navigate, useNavigate } from "react-router-dom";
+import {signup}  from '../api/auth.api'
+import { readTokenSession, writeTokenSession } from "../lib/tokenization";
+import styles from "./AuthPage.module.css";
 
 function SignalCard({ label, value, note }) {
   return (
@@ -11,67 +11,98 @@ function SignalCard({ label, value, note }) {
       <div className={styles.signalValue}>{value}</div>
       <div className={styles.signalNote}>{note}</div>
     </article>
-  )
+  );
 }
 
 export default function SignupPage() {
-  const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
-  const session = readTokenSession()
-  const redirectTarget = searchParams.get('redirect') || '/tokenization'
-  const [showPassword, setShowPassword] = useState(false)
+  const navigate = useNavigate();
+  const session = readTokenSession();
+
   const [form, setForm] = useState({
-    fullName: '',
-    email: '',
-    password: '',
-  })
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+    fullName: "",
+    email: "",
+    password: "",
+    wallet: "",
+  });
 
-  if (session) {
-    return <Navigate to={redirectTarget} replace />
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  if (session) return <Navigate to="/tokenization" replace />;
+
+  function handleChange(e) {
+    const { name, value } = e.target;
+    setForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   }
-
-  function handleChange(event) {
-    const { name, value } = event.target
-    setForm((current) => ({ ...current, [name]: value }))
-  }
-
-  async function handleSubmit(event) {
-    event.preventDefault()
-    setError('')
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
 
     try {
-      setLoading(true)
-      const account = await signupOperator(form)
-      writeTokenSession(buildTokenSession(account))
-      navigate(redirectTarget)
-    } catch (e) {
-      setError(e.message)
+      const res = await signup(form); // or signup(form)
+
+      const response = res.data;
+
+      if (!response?.success) {
+        throw new Error(response?.message || "Auth failed");
+      }
+
+      const { user, token } = response.data;
+
+      writeTokenSession({
+        ownerName: user?.name,
+        ownerEmail: user?.email,
+        token: token,
+      });
+
+      navigate("/tokenization");
+    } catch (err) {
+      setError(err?.response?.data?.message || err?.message || "Auth failed");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
   return (
     <div className={styles.page}>
       <section className={styles.shell}>
+        {/* LEFT SIDE */}
         <div className={styles.showcase}>
           <div className={styles.badge}>BREEZO operator onboarding</div>
           <div className={styles.orbitBadge}>Premium DePIN onboarding</div>
-          <h1 className={styles.title}>Create your private node owner account.</h1>
+
+          <h1 className={styles.title}>
+            Create your private node owner account.
+          </h1>
+
           <p className={styles.subtitle}>
-            Sign up once with your full name, email, and password. After that, your personal
-            dashboard opens with your node telemetry and reward state only.
+            Sign up with full name, email, wallet and password.
           </p>
 
           <div className={styles.signalRail}>
-            <SignalCard label="Identity" value="Full name" note="Binds the private dashboard to one operator profile." />
-            <SignalCard label="Access" value="Secure email login" note="The same credentials are used later on the login page." />
-            <SignalCard label="Dashboard" value="Private node view" note="Telemetry, AQI, BMP, and rewards remain inside your own account." />
+            <SignalCard
+              label="Identity"
+              value="Full name"
+              note="Operator profile binding"
+            />
+            <SignalCard
+              label="Wallet"
+              value="Solana address"
+              note="Used for rewards"
+            />
+            <SignalCard
+              label="Access"
+              value="JWT session"
+              note="Stored in secure cookie"
+            />
           </div>
         </div>
 
+        {/* RIGHT SIDE FORM */}
         <div className={styles.card}>
           <div className={styles.formHeader}>
             <div>
@@ -83,49 +114,69 @@ export default function SignupPage() {
           <form className={styles.form} onSubmit={handleSubmit}>
             <label className={styles.field}>
               <span className={styles.fieldLabel}>Full name</span>
-              <input className={styles.input} type="text" name="fullName" value={form.fullName} onChange={handleChange} required />
+              <input
+                className={styles.input}
+                name="fullName"
+                value={form.fullName}
+                onChange={handleChange}
+                required
+              />
             </label>
 
             <label className={styles.field}>
               <span className={styles.fieldLabel}>Email</span>
-              <input className={styles.input} type="email" name="email" value={form.email} onChange={handleChange} required />
+              <input
+                className={styles.input}
+                type="email"
+                name="email"
+                value={form.email}
+                onChange={handleChange}
+                required
+              />
+            </label>
+
+            <label className={styles.field}>
+              <span className={styles.fieldLabel}>Wallet</span>
+              <input
+                className={styles.input}
+                name="wallet"
+                value={form.wallet}
+                onChange={handleChange}
+                required
+              />
             </label>
 
             <label className={styles.field}>
               <span className={styles.fieldLabel}>Password</span>
-              <div className={styles.passwordWrap}>
-                <input
-                  className={`${styles.input} ${styles.passwordInput}`}
-                  type={showPassword ? 'text' : 'password'}
-                  name="password"
-                  value={form.password}
-                  onChange={handleChange}
-                  required
-                />
-                <button
-                  className={styles.toggleBtn}
-                  type="button"
-                  onClick={() => setShowPassword((current) => !current)}
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
-                >
-                  {showPassword ? 'Hide' : 'Show'}
-                </button>
-              </div>
+              <input
+                className={styles.input}
+                type="password"
+                name="password"
+                value={form.password}
+                onChange={handleChange}
+                required
+              />
             </label>
 
             {error && <div className={styles.errorBox}>{error}</div>}
 
-            <button className={styles.primaryBtn} type="submit" disabled={loading}>
-              {loading ? 'Creating account...' : 'Sign up'}
+            <button
+              className={styles.primaryBtn}
+              type="submit"
+              disabled={loading}
+            >
+              {loading ? "Creating account..." : "Sign up"}
             </button>
           </form>
 
           <div className={styles.switchRow}>
             <span className={styles.switchText}>Already have an account?</span>
-            <Link className={styles.linkBtn} to="/login">Go to login</Link>
+            <Link className={styles.linkBtn} to="/login">
+              Go to login
+            </Link>
           </div>
         </div>
       </section>
     </div>
-  )
+  );
 }

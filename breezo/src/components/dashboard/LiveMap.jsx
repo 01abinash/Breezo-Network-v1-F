@@ -1,13 +1,23 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import L from 'leaflet'
-import { MapContainer, Marker, Popup, TileLayer, ZoomControl, useMap } from 'react-leaflet'
+import {
+  MapContainer,
+  Marker,
+  Popup,
+  TileLayer,
+  ZoomControl,
+  useMap,
+} from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
-import { CITIES } from '../../lib/aqi'
-import { buildDeviceAirSnapshot, getActiveDeviceCityKeys, getDeviceDemo } from '../../lib/deviceDemo'
+
+import { fetchMapNodes } from '../../services/map.service'
+import { socket } from '../../sockets/socket.client'
+
 import styles from './LiveMap.module.css'
 
-const DEFAULT_CENTER = [27.7172, 85.324]
+const DEFAULT_CENTER = [27.7007, 85.3001]
 
+// 🎨 AQI COLOR
 function getMarkerColor(aqi) {
   if (aqi <= 50) return '#4ADE80'
   if (aqi <= 100) return '#FCD34D'
@@ -17,6 +27,37 @@ function getMarkerColor(aqi) {
   return '#EF4444'
 }
 
+// 🧠 MAP TRANSFORM
+function mapNodeToDevice(node) {
+  const lat = node.lat ?? node.location?.lat;
+  const lng = node.lng ?? node.location?.lng;
+
+  return {
+    cityKey: node.nodeId,
+    cityLabel: node.nodeId,
+
+    coords: [lat, lng],
+
+    aqi: node.aqi,
+    status: node.aqiLevel,
+    color: getMarkerColor(node.aqi),
+
+    connectivity: 'online',
+    lastSeen: 'just now',
+
+    telemetry: {
+      pm25: node.pm25,
+      temperature: node.temperature,
+      humidity: node.humidity || 0,
+      pressure: 0,
+      mq135: 0,
+    },
+  }
+}
+
+
+
+// 🎯 MARKER
 function createMarkerIcon(color, isActive) {
   const size = isActive ? 22 : 18
   const halo = isActive ? 10 : 6
@@ -35,82 +76,89 @@ function createMarkerIcon(color, isActive) {
     `,
     iconSize: [size, size],
     iconAnchor: [size / 2, size / 2],
-    popupAnchor: [0, -size / 2],
   })
 }
 
-function FitMapToDevices({ devices, selectedCoords }) {
+// 🗺️ FIT MAP
+function FitMapToDevices({ selectedCoords }) {
   const map = useMap()
+  const [isFirstLoad, setIsFirstLoad] = useState(true)
 
   useEffect(() => {
-    if (!devices.length) {
-      map.setView(DEFAULT_CENTER, 9)
+    // 1. ON FIRST LOAD: Always force Kathmandu, even if data exists
+    if (isFirstLoad) {
+      map.setView(DEFAULT_CENTER, 11)
+      setIsFirstLoad(false)
       return
     }
 
-    if (devices.length === 1) {
-      map.setView(devices[0].coords, 11)
-      return
-    }
-
+    // 2. ON SELECTION: Only move if you click a marker or sidebar item
     if (selectedCoords) {
-      map.flyTo(selectedCoords, Math.max(map.getZoom(), 12), {
+      map.flyTo(selectedCoords, 13, {
         animate: true,
         duration: 0.8,
       })
-      return
     }
 
-    map.fitBounds(L.latLngBounds(devices.map((device) => device.coords)), {
-      padding: [28, 28],
-    })
-  }, [devices, map, selectedCoords])
+    // IMPORTANT: We deleted map.fitBounds() entirely.
+    // This stops it from ever trying to show Delhi and KTM at the same time.
+  }, [map, selectedCoords, isFirstLoad])
 
   return null
 }
 
-export default function LiveMap({ activeCity, mode = 'panel' }) {
-  const devices = useMemo(() => {
-    return getActiveDeviceCityKeys().map((cityKey) => {
-      const city = CITIES[cityKey]
-      const telemetry = getDeviceDemo(cityKey, city)
-      const snapshot = buildDeviceAirSnapshot(cityKey)
+// 🚀 MAIN COMPONENT
+export default function LiveMap({ mode = 'panel' }) {
+  const [devices, setDevices] = useState([])
+  const [selectedCityKey, setSelectedCityKey] = useState(null)
 
-      return {
-        cityKey,
-        cityLabel: city.label,
-        coords: [telemetry.gps?.lat ?? city.lat, telemetry.gps?.lon ?? city.lon],
-        aqi: snapshot.aqi,
-        status: snapshot.info.label,
-        color: getMarkerColor(snapshot.aqi),
-        connectivity: snapshot.connectivity,
-        lastSeen: snapshot.lastSeen,
-        uptime: snapshot.uptime,
-        sampleRate: snapshot.sampleRate,
-        telemetry: {
-          pm25: snapshot.pm25,
-          temperature: snapshot.temperature,
-          humidity: snapshot.humidity,
-          pressure: snapshot.pressure,
-          mq135: snapshot.mq135,
-        },
+  // 🌐 INITIAL LOAD
+  useEffect(() => {
+    const load = async () => {
+      const res = await fetchMapNodes()
+      const mapped = res.map(mapNodeToDevice)
+
+      setDevices(mapped)
+
+      if (mapped.length) {
+        setSelectedCityKey(mapped[0].cityKey)
       }
-    })
+    }
+
+    load()
   }, [])
 
-  const [selectedCityKey, setSelectedCityKey] = useState(activeCity || devices[0]?.cityKey || null)
-
+  // 🔌 SOCKET LIVE UPDATE
   useEffect(() => {
-    if (activeCity) {
-      setSelectedCityKey(activeCity)
-    }
-  }, [activeCity])
+    socket.connect()
 
-  const selectedDevice = devices.find((device) => device.cityKey === selectedCityKey) ?? devices[0]
+    socket.on('node:update', (node) => {
+      const updated = mapNodeToDevice(node)
+
+      setDevices((prev) => {
+        const idx = prev.findIndex((d) => d.cityKey === updated.cityKey)
+
+        if (idx !== -1) {
+          const copy = [...prev]
+          copy[idx] = updated
+          return copy
+        }
+
+        return [...prev, updated]
+      })
+    })
+
+    return () => socket.off('node:update')
+  }, [])
+
+  const selectedDevice =
+    devices.find((d) => d.cityKey === selectedCityKey) || devices[0]
+
   const isPageMode = mode === 'page'
 
   return (
     <section className={`${styles.panel} ${mode === 'page' ? styles.panelPage : ''}`}>
+      {/* Header Section */}
       {mode !== 'page' && (
         <div className={styles.header}>
           <div>
@@ -132,6 +180,7 @@ export default function LiveMap({ activeCity, mode = 'panel' }) {
             <span className={styles.mapMeta}>{devices.length} node{devices.length === 1 ? '' : 's'} tracked</span>
           </div>
 
+          {/* Floating Overlay Card (Only in Page Mode) */}
           {isPageMode && selectedDevice && (
             <div className={styles.overlayCard}>
               <div className={styles.overlayTop}>
@@ -195,140 +244,140 @@ export default function LiveMap({ activeCity, mode = 'panel' }) {
                 }}
               >
                 {!isPageMode && (
-                <Popup closeButton={false} offset={[0, -8]}>
-                  <div className={styles.popupContent}>
-                    <div className={styles.popupCity}>{device.cityLabel}</div>
-                    <div className={styles.popupAqi}>AQI {device.aqi}</div>
-                    <div className={styles.popupStatus} style={{ color: device.color }}>{device.status}</div>
-                    <div className={styles.popupGrid}>
-                      <div className={styles.popupItem}>
-                        <span>Fine particle</span>
-                        <strong>{device.telemetry.pm25?.toFixed(1)}</strong>
+                  <Popup closeButton={false} offset={[0, -8]}>
+                    <div className={styles.popupContent}>
+                      <div className={styles.popupCity}>{device.cityLabel}</div>
+                      <div className={styles.popupAqi}>AQI {device.aqi}</div>
+                      <div className={styles.popupStatus} style={{ color: device.color }}>{device.status}</div>
+                      <div className={styles.popupGrid}>
+                        <div className={styles.popupItem}>
+                          <span>PM2.5</span>
+                          <strong>{device.telemetry.pm25?.toFixed(1)}</strong>
+                        </div>
+                        <div className={styles.popupItem}>
+                          <span>Temp</span>
+                          <strong>{device.telemetry.temperature?.toFixed(1)} C</strong>
+                        </div>
+                        <div className={styles.popupItem}>
+                          <span>Humidity</span>
+                          <strong>{device.telemetry.humidity?.toFixed(1)} %</strong>
+                        </div>
+                        <div className={styles.popupItem}>
+                          <span>Pressure</span>
+                          <strong>{device.telemetry.pressure?.toFixed(1)} hPa</strong>
+                        </div>
+                        <div className={styles.popupItem}>
+                          <span>MQ135</span>
+                          <strong>{device.telemetry.mq135?.toFixed(1)}</strong>
+                        </div>
+                        <div className={styles.popupItem}>
+                          <span>Uptime</span>
+                          <strong>{device.uptime?.toFixed(1)}%</strong>
+                        </div>
                       </div>
-                      <div className={styles.popupItem}>
-                        <span>Temp</span>
-                        <strong>{device.telemetry.temperature?.toFixed(1)} C</strong>
-                      </div>
-                      <div className={styles.popupItem}>
-                        <span>Humidity</span>
-                        <strong>{device.telemetry.humidity?.toFixed(1)} %</strong>
-                      </div>
-                      <div className={styles.popupItem}>
-                        <span>Pressure</span>
-                        <strong>{device.telemetry.pressure?.toFixed(1)} hPa</strong>
-                      </div>
-                      <div className={styles.popupItem}>
-                        <span>CO2</span>
-                        <strong>{device.telemetry.mq135?.toFixed(1)}</strong>
-                      </div>
-                      <div className={styles.popupItem}>
-                        <span>Uptime</span>
-                        <strong>{device.uptime?.toFixed(1)}%</strong>
+                      <div className={styles.popupFoot}>
+                        <span>{device.lastSeen}</span>
+                        <span>{device.connectivity}</span>
                       </div>
                     </div>
-                    <div className={styles.popupFoot}>
-                      <span>{device.lastSeen}</span>
-                      <span>{device.connectivity}</span>
-                    </div>
-                  </div>
-                </Popup>
+                  </Popup>
                 )}
               </Marker>
             ))}
           </MapContainer>
         </div>
 
+        {/* Sidebar Navigation (Hidden in Page Mode) */}
         {!isPageMode && (
-        <aside className={styles.nodeRail}>
-          <div className={styles.overviewCard}>
-          <div className={styles.railHeader}>
-            <div>
-              <div className={styles.railKicker}>Node overview</div>
-              <div className={styles.railTitle}>AQI device status</div>
+          <aside className={styles.nodeRail}>
+            <div className={styles.railHeader}>
+              <div>
+                <div className={styles.railKicker}>Node overview</div>
+                <div className={styles.railTitle}>AQI device status</div>
+              </div>
             </div>
-          </div>
 
-          <div className={styles.nodeList}>
-            {devices.map((device) => {
-              const isActive = device.cityKey === selectedCityKey
-              const online = device.connectivity === 'online'
+            <div className={styles.nodeList}>
+              {devices.map((device) => {
+                const isActive = device.cityKey === selectedCityKey
+                const online = device.connectivity === 'online'
 
-              return (
-                <button
-                  key={device.cityKey}
-                  type="button"
-                  className={`${styles.nodeCard} ${isActive ? styles.nodeCardActive : ''}`}
-                  onClick={() => setSelectedCityKey(device.cityKey)}
-                >
-                  <div className={styles.nodeTop}>
-                    <div>
-                      <div className={styles.nodeCity}>{device.cityLabel}</div>
-                      <div className={styles.nodeId}>{device.cityKey.toUpperCase()} · AQI {device.aqi}</div>
+                return (
+                  <button
+                    key={device.cityKey}
+                    type="button"
+                    className={`${styles.nodeCard} ${isActive ? styles.nodeCardActive : ''}`}
+                    onClick={() => setSelectedCityKey(device.cityKey)}
+                  >
+                    <div className={styles.nodeTop}>
+                      <div>
+                        <div className={styles.nodeCity}>{device.cityLabel}</div>
+                        <div className={styles.nodeId}>{device.cityKey.toUpperCase()} · AQI {device.aqi}</div>
+                      </div>
+                      <span className={`${styles.statusPill} ${online ? styles.online : styles.offline}`}>
+                        {online ? 'Online' : 'Offline'}
+                      </span>
                     </div>
-                    <span className={`${styles.statusPill} ${online ? styles.online : styles.offline}`}>
-                      {online ? 'Online' : 'Offline'}
-                    </span>
-                  </div>
 
-                  <div className={styles.nodeMeta}>
-                    <span>{device.lastSeen}</span>
-                    <span>{device.sampleRate} sync</span>
-                  </div>
-                </button>
-              )
-            })}
-          </div>
-          </div>
-
-          {selectedDevice && (
-            <div className={styles.detailCard}>
-              <div className={styles.detailHeader}>
-                <div>
-                  <div className={styles.railKicker}>Selected node</div>
-                  <div className={styles.detailTitle}>{selectedDevice.cityLabel}</div>
-                </div>
-                <span className={styles.detailAqi} style={{ color: selectedDevice.color }}>
-                  AQI {selectedDevice.aqi}
-                </span>
-              </div>
-
-              <div className={styles.detailGrid}>
-                <div className={styles.detailItem}>
-                  <span>Connectivity</span>
-                  <strong>{selectedDevice.connectivity}</strong>
-                </div>
-                <div className={styles.detailItem}>
-                  <span>Last seen</span>
-                  <strong>{selectedDevice.lastSeen}</strong>
-                </div>
-                <div className={styles.detailItem}>
-                  <span>Fine particle</span>
-                  <strong>{selectedDevice.telemetry.pm25?.toFixed(1)} ug/m3</strong>
-                </div>
-                <div className={styles.detailItem}>
-                  <span>Temperature</span>
-                  <strong>{selectedDevice.telemetry.temperature?.toFixed(1)} C</strong>
-                </div>
-                <div className={styles.detailItem}>
-                  <span>Humidity</span>
-                  <strong>{selectedDevice.telemetry.humidity?.toFixed(1)} %</strong>
-                </div>
-                <div className={styles.detailItem}>
-                  <span>Pressure</span>
-                  <strong>{selectedDevice.telemetry.pressure?.toFixed(1)} hPa</strong>
-                </div>
-                <div className={styles.detailItem}>
-                  <span>CO2</span>
-                  <strong>{selectedDevice.telemetry.mq135?.toFixed(1)}</strong>
-                </div>
-                <div className={styles.detailItem}>
-                  <span>Uptime</span>
-                  <strong>{selectedDevice.uptime?.toFixed(1)}%</strong>
-                </div>
-              </div>
+                    <div className={styles.nodeMeta}>
+                      <span>{device.lastSeen}</span>
+                      <span>{device.sampleRate} sync</span>
+                    </div>
+                  </button>
+                )
+              })}
             </div>
-          )}
-        </aside>
+
+            {/* Detailed Info Card at the bottom of sidebar */}
+            {selectedDevice && (
+              <div className={styles.detailCard}>
+                <div className={styles.detailHeader}>
+                  <div>
+                    <div className={styles.railKicker}>Selected node</div>
+                    <div className={styles.detailTitle}>{selectedDevice.cityLabel}</div>
+                  </div>
+                  <span className={styles.detailAqi} style={{ color: selectedDevice.color }}>
+                    AQI {selectedDevice.aqi}
+                  </span>
+                </div>
+
+                <div className={styles.detailGrid}>
+                  <div className={styles.detailItem}>
+                    <span>Connectivity</span>
+                    <strong>{selectedDevice.connectivity}</strong>
+                  </div>
+                  <div className={styles.detailItem}>
+                    <span>Last seen</span>
+                    <strong>{selectedDevice.lastSeen}</strong>
+                  </div>
+                  <div className={styles.detailItem}>
+                    <span>PM2.5</span>
+                    <strong>{selectedDevice.telemetry.pm25?.toFixed(1)} ug/m3</strong>
+                  </div>
+                  <div className={styles.detailItem}>
+                    <span>Temperature</span>
+                    <strong>{selectedDevice.telemetry.temperature?.toFixed(1)} C</strong>
+                  </div>
+                  <div className={styles.detailItem}>
+                    <span>Humidity</span>
+                    <strong>{selectedDevice.telemetry.humidity?.toFixed(1)} %</strong>
+                  </div>
+                  <div className={styles.detailItem}>
+                    <span>Pressure</span>
+                    <strong>{selectedDevice.telemetry.pressure?.toFixed(1)} hPa</strong>
+                  </div>
+                  <div className={styles.detailItem}>
+                    <span>MQ135</span>
+                    <strong>{selectedDevice.telemetry.mq135?.toFixed(1)}</strong>
+                  </div>
+                  <div className={styles.detailItem}>
+                    <span>Uptime</span>
+                    <strong>{selectedDevice.uptime?.toFixed(1)}%</strong>
+                  </div>
+                </div>
+              </div>
+            )}
+          </aside>
         )}
       </div>
     </section>
