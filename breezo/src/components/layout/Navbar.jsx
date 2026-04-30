@@ -84,13 +84,7 @@ export default function Navbar() {
       <div className={styles.right}>
 
         {/* 🔥 WALLET CONNECT (BEST PLACE) */}
-        <WalletMultiButton
-          style={{
-            background: "orange",
-            color: "white",
-            borderRadius: "8px",
-          }}
-        />
+        <WalletMultiButton className={styles.walletBtn} />
 
         {/* SESSION PROFILE */}
         {session ? (

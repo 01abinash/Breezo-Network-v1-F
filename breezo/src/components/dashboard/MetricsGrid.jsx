@@ -1,11 +1,11 @@
 import styles from './MetricsGrid.module.css'
 
 const METRICS = [
-  { key: 'pm25', label: 'Fine particle', unit: 'ug/m3', color: '#38BDF8', max: 150, note: 'Primary AQI input from your particulate sensor.' },
-  { key: 'temperature', label: 'Temperature', unit: 'C', color: '#FB923C', max: 50, note: 'Ambient temperature from DHT22.' },
-  { key: 'humidity', label: 'Humidity', unit: '% RH', color: '#2DD4BF', max: 100, note: 'Relative humidity from DHT22.' },
-  { key: 'pressure', label: 'Pressure', unit: 'hPa', color: '#A78BFA', max: 1200, note: 'Atmospheric pressure from BMP180.' },
-  { key: 'mq135', label: 'CO2', unit: 'raw/ppm', color: '#FCD34D', max: 1000, note: 'Gas sensor signal for your backend calibration logic.' },
+  { key: 'pm25', label: 'Fine particle', icon: '🌫', unit: 'ug/m3', color: '#38BDF8', max: 150, note: 'Primary AQI input from your particulate sensor.' },
+  { key: 'temperature', label: 'Temperature', icon: '🌡', unit: 'C', color: '#FB923C', max: 50, note: 'Ambient temperature from DHT22.' },
+  { key: 'humidity', label: 'Humidity', icon: '💧', unit: '% RH', color: '#2DD4BF', max: 100, note: 'Relative humidity from DHT22.' },
+  { key: 'pressure', label: 'Pressure', icon: '◉', unit: 'hPa', color: '#A78BFA', max: 1200, note: 'Atmospheric pressure from BMP180.' },
+  { key: 'mq135', label: 'CO2', icon: '☁', unit: 'raw/ppm', color: '#FCD34D', max: 1000, note: 'Gas sensor signal for your backend calibration logic.' },
 ]
 
 function MetricCard({ metric, value }) {
@@ -14,7 +14,10 @@ function MetricCard({ metric, value }) {
   return (
     <div className={styles.card}>
       <div className={styles.topRow}>
-        <span className={styles.label}>{metric.label}</span>
+        <span className={styles.labelWrap}>
+          <span className={styles.labelIcon} aria-hidden="true">{metric.icon}</span>
+          <span className={styles.label}>{metric.label}</span>
+        </span>
       </div>
       <div className={styles.value}>
         {value != null ? parseFloat(value).toFixed(1) : 'Awaiting'}
@@ -40,7 +43,10 @@ function InfoCard({ label, value, note }) {
   return (
     <div className={styles.card}>
       <div className={styles.topRow}>
-        <span className={styles.label}>{label}</span>
+        <span className={styles.labelWrap}>
+          <span className={styles.labelIcon} aria-hidden="true">⌖</span>
+          <span className={styles.label}>{label}</span>
+        </span>
       </div>
       <div className={`${styles.value} ${styles.valueCompact}`}>
         {value ?? 'Awaiting backend'}

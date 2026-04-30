@@ -160,7 +160,7 @@ export default function TokenizationPage() {
             Connect your Phantom wallet to view your air quality nodes and claim BREEZO token rewards.
           </p>
           <div className={styles.metaRow} style={{ justifyContent: "center", marginTop: 28 }}>
-            <WalletMultiButton />
+            <WalletMultiButton className={styles.walletBtn} />
           </div>
         </div>
       </div>

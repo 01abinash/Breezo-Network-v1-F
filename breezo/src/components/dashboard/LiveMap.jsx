@@ -17,7 +17,17 @@ import styles from './LiveMap.module.css'
 
 const DEFAULT_CENTER = [27.7007, 85.3001]
 
-// 🎨 AQI COLOR
+const SENSOR_ICONS = {
+  fineParticle: '🌫',
+  temperature: '🌡',
+  humidity: '💧',
+  pressure: '◉',
+  co2: '☁',
+  lastSeen: '⏱',
+  uptime: '↻',
+  connectivity: '◎',
+}
+
 function getMarkerColor(aqi) {
   if (aqi <= 50) return '#4ADE80'
   if (aqi <= 100) return '#FCD34D'
@@ -27,24 +37,19 @@ function getMarkerColor(aqi) {
   return '#EF4444'
 }
 
-// 🧠 MAP TRANSFORM
 function mapNodeToDevice(node) {
-  const lat = node.lat ?? node.location?.lat;
-  const lng = node.lng ?? node.location?.lng;
+  const lat = node.lat ?? node.location?.lat
+  const lng = node.lng ?? node.location?.lng
 
   return {
     cityKey: node.nodeId,
     cityLabel: node.nodeId,
-
     coords: [lat, lng],
-
     aqi: node.aqi,
     status: node.aqiLevel,
     color: getMarkerColor(node.aqi),
-
     connectivity: 'online',
     lastSeen: 'just now',
-
     telemetry: {
       pm25: node.pm25,
       temperature: node.temperature,
@@ -55,9 +60,6 @@ function mapNodeToDevice(node) {
   }
 }
 
-
-
-// 🎯 MARKER
 function createMarkerIcon(color, isActive) {
   const size = isActive ? 22 : 18
   const halo = isActive ? 10 : 6
@@ -79,40 +81,41 @@ function createMarkerIcon(color, isActive) {
   })
 }
 
-// 🗺️ FIT MAP
+function SensorLabel({ icon, children }) {
+  return (
+    <span className={styles.sensorLabel}>
+      <span className={styles.sensorIcon} aria-hidden="true">{icon}</span>
+      <span>{children}</span>
+    </span>
+  )
+}
+
 function FitMapToDevices({ selectedCoords }) {
   const map = useMap()
   const [isFirstLoad, setIsFirstLoad] = useState(true)
 
   useEffect(() => {
-    // 1. ON FIRST LOAD: Always force Kathmandu, even if data exists
     if (isFirstLoad) {
       map.setView(DEFAULT_CENTER, 11)
       setIsFirstLoad(false)
       return
     }
 
-    // 2. ON SELECTION: Only move if you click a marker or sidebar item
     if (selectedCoords) {
       map.flyTo(selectedCoords, 13, {
         animate: true,
         duration: 0.8,
       })
     }
-
-    // IMPORTANT: We deleted map.fitBounds() entirely.
-    // This stops it from ever trying to show Delhi and KTM at the same time.
   }, [map, selectedCoords, isFirstLoad])
 
   return null
 }
 
-// 🚀 MAIN COMPONENT
 export default function LiveMap({ mode = 'panel' }) {
   const [devices, setDevices] = useState([])
   const [selectedCityKey, setSelectedCityKey] = useState(null)
 
-  // 🌐 INITIAL LOAD
   useEffect(() => {
     const load = async () => {
       const res = await fetchMapNodes()
@@ -128,7 +131,6 @@ export default function LiveMap({ mode = 'panel' }) {
     load()
   }, [])
 
-  // 🔌 SOCKET LIVE UPDATE
   useEffect(() => {
     socket.connect()
 
@@ -158,7 +160,6 @@ export default function LiveMap({ mode = 'panel' }) {
 
   return (
     <section className={`${styles.panel} ${mode === 'page' ? styles.panelPage : ''}`}>
-      {/* Header Section */}
       {mode !== 'page' && (
         <div className={styles.header}>
           <div>
@@ -180,7 +181,6 @@ export default function LiveMap({ mode = 'panel' }) {
             <span className={styles.mapMeta}>{devices.length} node{devices.length === 1 ? '' : 's'} tracked</span>
           </div>
 
-          {/* Floating Overlay Card (Only in Page Mode) */}
           {isPageMode && selectedDevice && (
             <div className={styles.overlayCard}>
               <div className={styles.overlayTop}>
@@ -195,27 +195,27 @@ export default function LiveMap({ mode = 'panel' }) {
 
               <div className={styles.overlayGrid}>
                 <div className={styles.overlayItem}>
-                  <span>Fine particle</span>
+                  <SensorLabel icon={SENSOR_ICONS.fineParticle}>Fine particle</SensorLabel>
                   <strong>{selectedDevice.telemetry.pm25?.toFixed(1)}</strong>
                 </div>
                 <div className={styles.overlayItem}>
-                  <span>Temp</span>
+                  <SensorLabel icon={SENSOR_ICONS.temperature}>Temp</SensorLabel>
                   <strong>{selectedDevice.telemetry.temperature?.toFixed(1)} C</strong>
                 </div>
                 <div className={styles.overlayItem}>
-                  <span>Humidity</span>
+                  <SensorLabel icon={SENSOR_ICONS.humidity}>Humidity</SensorLabel>
                   <strong>{selectedDevice.telemetry.humidity?.toFixed(1)} %</strong>
                 </div>
                 <div className={styles.overlayItem}>
-                  <span>Pressure</span>
+                  <SensorLabel icon={SENSOR_ICONS.pressure}>Pressure</SensorLabel>
                   <strong>{selectedDevice.telemetry.pressure?.toFixed(1)} hPa</strong>
                 </div>
                 <div className={styles.overlayItem}>
-                  <span>CO2</span>
+                  <SensorLabel icon={SENSOR_ICONS.co2}>CO2</SensorLabel>
                   <strong>{selectedDevice.telemetry.mq135?.toFixed(1)}</strong>
                 </div>
                 <div className={styles.overlayItem}>
-                  <span>Last seen</span>
+                  <SensorLabel icon={SENSOR_ICONS.lastSeen}>Last seen</SensorLabel>
                   <strong>{selectedDevice.lastSeen}</strong>
                 </div>
               </div>
@@ -232,7 +232,7 @@ export default function LiveMap({ mode = 'panel' }) {
           >
             <TileLayer url="https://tile.openstreetmap.org/{z}/{x}/{y}.png" maxZoom={19} />
             <ZoomControl position="bottomright" />
-            <FitMapToDevices devices={devices} selectedCoords={selectedDevice?.coords} />
+            <FitMapToDevices selectedCoords={selectedDevice?.coords} />
 
             {devices.map((device) => (
               <Marker
@@ -251,27 +251,27 @@ export default function LiveMap({ mode = 'panel' }) {
                       <div className={styles.popupStatus} style={{ color: device.color }}>{device.status}</div>
                       <div className={styles.popupGrid}>
                         <div className={styles.popupItem}>
-                          <span>PM2.5</span>
+                          <SensorLabel icon={SENSOR_ICONS.fineParticle}>Fine particle</SensorLabel>
                           <strong>{device.telemetry.pm25?.toFixed(1)}</strong>
                         </div>
                         <div className={styles.popupItem}>
-                          <span>Temp</span>
+                          <SensorLabel icon={SENSOR_ICONS.temperature}>Temp</SensorLabel>
                           <strong>{device.telemetry.temperature?.toFixed(1)} C</strong>
                         </div>
                         <div className={styles.popupItem}>
-                          <span>Humidity</span>
+                          <SensorLabel icon={SENSOR_ICONS.humidity}>Humidity</SensorLabel>
                           <strong>{device.telemetry.humidity?.toFixed(1)} %</strong>
                         </div>
                         <div className={styles.popupItem}>
-                          <span>Pressure</span>
+                          <SensorLabel icon={SENSOR_ICONS.pressure}>Pressure</SensorLabel>
                           <strong>{device.telemetry.pressure?.toFixed(1)} hPa</strong>
                         </div>
                         <div className={styles.popupItem}>
-                          <span>MQ135</span>
+                          <SensorLabel icon={SENSOR_ICONS.co2}>CO2</SensorLabel>
                           <strong>{device.telemetry.mq135?.toFixed(1)}</strong>
                         </div>
                         <div className={styles.popupItem}>
-                          <span>Uptime</span>
+                          <SensorLabel icon={SENSOR_ICONS.uptime}>Uptime</SensorLabel>
                           <strong>{device.uptime?.toFixed(1)}%</strong>
                         </div>
                       </div>
@@ -287,7 +287,6 @@ export default function LiveMap({ mode = 'panel' }) {
           </MapContainer>
         </div>
 
-        {/* Sidebar Navigation (Hidden in Page Mode) */}
         {!isPageMode && (
           <aside className={styles.nodeRail}>
             <div className={styles.railHeader}>
@@ -328,7 +327,6 @@ export default function LiveMap({ mode = 'panel' }) {
               })}
             </div>
 
-            {/* Detailed Info Card at the bottom of sidebar */}
             {selectedDevice && (
               <div className={styles.detailCard}>
                 <div className={styles.detailHeader}>
@@ -343,35 +341,35 @@ export default function LiveMap({ mode = 'panel' }) {
 
                 <div className={styles.detailGrid}>
                   <div className={styles.detailItem}>
-                    <span>Connectivity</span>
+                    <SensorLabel icon={SENSOR_ICONS.connectivity}>Connectivity</SensorLabel>
                     <strong>{selectedDevice.connectivity}</strong>
                   </div>
                   <div className={styles.detailItem}>
-                    <span>Last seen</span>
+                    <SensorLabel icon={SENSOR_ICONS.lastSeen}>Last seen</SensorLabel>
                     <strong>{selectedDevice.lastSeen}</strong>
                   </div>
                   <div className={styles.detailItem}>
-                    <span>PM2.5</span>
+                    <SensorLabel icon={SENSOR_ICONS.fineParticle}>Fine particle</SensorLabel>
                     <strong>{selectedDevice.telemetry.pm25?.toFixed(1)} ug/m3</strong>
                   </div>
                   <div className={styles.detailItem}>
-                    <span>Temperature</span>
+                    <SensorLabel icon={SENSOR_ICONS.temperature}>Temperature</SensorLabel>
                     <strong>{selectedDevice.telemetry.temperature?.toFixed(1)} C</strong>
                   </div>
                   <div className={styles.detailItem}>
-                    <span>Humidity</span>
+                    <SensorLabel icon={SENSOR_ICONS.humidity}>Humidity</SensorLabel>
                     <strong>{selectedDevice.telemetry.humidity?.toFixed(1)} %</strong>
                   </div>
                   <div className={styles.detailItem}>
-                    <span>Pressure</span>
+                    <SensorLabel icon={SENSOR_ICONS.pressure}>Pressure</SensorLabel>
                     <strong>{selectedDevice.telemetry.pressure?.toFixed(1)} hPa</strong>
                   </div>
                   <div className={styles.detailItem}>
-                    <span>MQ135</span>
+                    <SensorLabel icon={SENSOR_ICONS.co2}>CO2</SensorLabel>
                     <strong>{selectedDevice.telemetry.mq135?.toFixed(1)}</strong>
                   </div>
                   <div className={styles.detailItem}>
-                    <span>Uptime</span>
+                    <SensorLabel icon={SENSOR_ICONS.uptime}>Uptime</SensorLabel>
                     <strong>{selectedDevice.uptime?.toFixed(1)}%</strong>
                   </div>
                 </div>

@@ -2,7 +2,7 @@ import axios from "axios";
 import { TOKEN_SESSION_KEY } from "../lib/tokenization";
 
 export const api = axios.create({
-  baseURL: "http://localhost:5000/api/v1",
+  baseURL: "http://34.132.6.170:5000/api/v1",
 });
 
 api.interceptors.request.use((config) => {

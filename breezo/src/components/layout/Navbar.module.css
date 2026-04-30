@@ -67,6 +67,29 @@
 
 .right { display: flex; align-items: center; gap: 12px; }
 
+.walletBtn:global(.wallet-adapter-button) {
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: var(--sky);
+  color: #03141b;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: var(--font);
+  border: 1px solid transparent;
+  box-shadow: none;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.walletBtn:global(.wallet-adapter-button:hover) {
+  background: #7DD3FC;
+  transform: translateY(-1px);
+}
+
+.walletBtn:global(.wallet-adapter-button-trigger) {
+  background: var(--sky);
+}
+
 .ctaBtn {
   background: var(--sky);
   color: #07080A;
@@ -110,6 +133,7 @@
 .profileBtn:focus-visible,
 .dropdownItem:focus-visible,
 .ctaBtn:focus-visible,
+.walletBtn:global(.wallet-adapter-button:focus-visible),
 .hamburger:focus-visible {
   outline: 2px solid var(--sky);
   outline-offset: 3px;
@@ -226,6 +250,11 @@
   }
   .links.open { transform: translateY(0); }
   .hamburger { display: flex; }
+  .walletBtn:global(.wallet-adapter-button) {
+    min-height: 32px;
+    padding: 0 10px;
+    font-size: 11px;
+  }
   .profileName { max-width: 96px; }
   .dropdown {
     right: 0;
