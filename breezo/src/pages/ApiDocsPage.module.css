@@ -218,43 +218,6 @@
   background: rgba(255,255,255,0.04);
 }
 
-/* Style the Solana wallet-adapter button to match .primaryAction */
-.walletBtn:global(.wallet-adapter-button) {
-  min-height: 44px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 18px;
-  border-radius: 14px;
-  font-family: var(--font);
-  font-size: 13px;
-  font-weight: 700;
-  border: 1px solid transparent;
-  color: #04131a;
-  background: linear-gradient(135deg, rgba(56,189,248,1), rgba(14,165,233,0.94));
-  box-shadow: 0 12px 30px rgba(14, 165, 233, 0.22);
-  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
-}
-
-.walletBtn:global(.wallet-adapter-button:hover:not([disabled])) {
-  transform: translateY(-1px);
-  background: linear-gradient(135deg, rgba(125,211,252,1), rgba(56,189,248,0.95));
-}
-
-.walletBtn:global(.wallet-adapter-button-trigger) {
-  background: linear-gradient(135deg, rgba(56,189,248,1), rgba(14,165,233,0.94));
-}
-
-.walletBtn:global(.wallet-adapter-button:focus-visible) {
-  outline: 2px solid var(--sky, #38bdf8);
-  outline-offset: 3px;
-}
-
-.walletBtn:global(.wallet-adapter-button .wallet-adapter-button-start-icon),
-.walletBtn:global(.wallet-adapter-button .wallet-adapter-button-end-icon) {
-  margin-right: 8px;
-}
-
 .sectionHeader {
   margin-bottom: 20px;
 }

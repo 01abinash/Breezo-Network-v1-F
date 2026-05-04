@@ -1,7 +1,7 @@
 import { io } from "socket.io-client";
 
 // 🔗 Backend URL (use env in real project)
-const SOCKET_URL = import.meta.env.VITE_API_URL || "http://34.132.6.170:5000/";
+const SOCKET_URL = import.meta.env.VITE_API_URL || "https://api.cka.one";
 
 // 🚀 Create socket instance
 export const socket = io(SOCKET_URL, {

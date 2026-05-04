@@ -1,6 +1,6 @@
 import React, { useRef, useState } from "react";
 
-const API_URL = "http://34.132.6.170:5000/api/v1/node/ingest";
+const API_URL = "https://api.cka.one/api/v1/node/ingest";
 
 const SIGNATURE =
   "KJXG3pULqQnKhDPk3RgoRWz2XoWUcEfCrEM6z5uFM64fHcBPqLpywuzMP6UgmxGjGsfzDmJYH2c6UHVuXGYSsFb";
@@ -8,7 +8,7 @@ const SIGNATURE =
 const NODES = [
   { nodeId: "NODE_100", lat: 27.7172, lng: 85.3240 },
   { nodeId: "NODE_101", lat: 27.6700, lng: 85.3200 },
- 
+  { nodeId: "NODE_102", lat: 27.7005, lng: 85.3000 }
 ];
 
 export default function IoTSimulator() {

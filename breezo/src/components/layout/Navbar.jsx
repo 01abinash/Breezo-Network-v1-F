@@ -74,7 +74,6 @@ export default function Navbar() {
         <li><Link to="/"          className={isActive('/')          ? styles.active : ''}>Home</Link></li>
         <li><Link to="/dashboard" className={isActive('/dashboard') ? styles.active : ''}>Dashboard</Link></li>
         <li><Link to="/map"       className={isActive('/map')       ? styles.active : ''}>Map</Link></li>
-        <li><Link to="/docs"      className={isActive('/docs')      ? styles.active : ''}>Docs</Link></li>
         <li><Link to="/product"   className={isActive('/product') || isActive('/network') ? styles.active : ''}>Product</Link></li>
         <li><Link to="/about"     className={isActive('/about')     ? styles.active : ''}>About</Link></li>
         <li><Link to="/contact"   className={isActive('/contact')   ? styles.active : ''}>Contact Us</Link></li>
@@ -84,7 +83,13 @@ export default function Navbar() {
       <div className={styles.right}>
 
         {/* 🔥 WALLET CONNECT (BEST PLACE) */}
-        <WalletMultiButton className={styles.walletBtn} />
+        <WalletMultiButton
+          style={{
+            background: "orange",
+            color: "white",
+            borderRadius: "8px",
+          }}
+        />
 
         {/* SESSION PROFILE */}
         {session ? (
@@ -114,9 +119,9 @@ export default function Navbar() {
                 >
                   Open dashboard
                 </button>
-                <button className={styles.dropdownItem} onClick={() => navigate('/api-keys')} type="button" role="menuitem">
+                {/* <button className={styles.dropdownItem} onClick={() => navigate('/api-keys')} type="button" role="menuitem">
                   API keys
-                </button>
+                </button> */}
                 <button className={styles.dropdownItem} onClick={handleLogout} type="button" role="menuitem">
                   Logout
                 </button>
